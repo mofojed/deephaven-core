@@ -7,7 +7,6 @@ Loosely based on the [VSCode triage process](https://github.com/microsoft/vscode
      - [web ui](https://github.com/deephaven/deephaven-core/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone+label%3A%22web+ui%22) - Bender
      - [core](https://github.com/deephaven/deephaven-core/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone+label%3Acore+) - Ryan
      - [build](https://github.com/deephaven/deephaven-core/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone+label%3Abuild+) - Devin
-     - [grpc](https://github.com/deephaven/deephaven-core/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone+label%3Agrpc+) - Nate
      - [community](https://github.com/deephaven/deephaven-core/issues?q=is%3Aopen+is%3Aissue+no%3Amilestone+label%3Acommunity) - Chip
 3. Area owners [triage tickets assigned to them](https://github.com/deephaven/deephaven-core/issues?q=is%3Aopen+label%3Atriage+assignee%3A%40me+) by adding appropriate labels, any additional comments, and adding to the backlog if it is an accepted issue.
    - Tickets may have additional labels added, dependencies linked, and/or comments added.

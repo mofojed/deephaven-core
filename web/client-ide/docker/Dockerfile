@@ -10,10 +10,7 @@ FROM docker.io/library/nginx:1.19.7 as build
 RUN apt-get update && \
     apt-get install -y \
         openssh-client \
-        git \
         wget \
-        libxml2 \
-        libxslt1-dev \
         libpcre3 \
         libpcre3-dev \
         zlib1g \
@@ -32,7 +29,7 @@ RUN wget "http://nginx.org/download/nginx-1.19.7.tar.gz" && \
 
 WORKDIR /usr/src/nginx-${NGINX_VERSION}
 RUN NGINX_ARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') \
-    ./configure --with-http_dav_module ${NGINX_ARGS} && \
+    ./configure --with-http_dav_module --with-http_ssl_module ${NGINX_ARGS} && \
     make modules
 
 # FROM docker.io/library/nginx:1.19.7

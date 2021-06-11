@@ -8,3 +8,4 @@ COPY --from=js-out /usr/src/app/raw-js-openapi/build/js-out /usr/share/nginx/htm
 COPY licenses/ /
 COPY dhapi /usr/share/nginx/html/jsapi
 COPY default.conf /etc/nginx/conf.d
+RUN mkdir -p /home/nginx/files && echo "Hello from webdav" > /home/nginx/files/index.html && chown nginx /home/nginx/files

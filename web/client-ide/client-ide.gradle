@@ -42,6 +42,7 @@ task prepareDocker(type: Sync) {
     }
     from 'docker/Dockerfile'
     from 'nginx/default.conf'
+    from 'nginx/nginx.conf'
 }
 
 Docker.registerDockerImage(project, 'buildDocker') {

@@ -14,6 +14,9 @@ COPY licenses/ /
 COPY dhapi /usr/share/nginx/html/jsapi
 COPY default.conf /etc/nginx/conf.d/
 COPY nginx.conf /etc/nginx/
-RUN mkdir -p /home/nginx/files && \
-    echo "Hello world" > /home/nginx/files/hello.txt && \
-    chown nginx /home/nginx/files
+
+RUN set -eux; \
+    mkdir -p /data/notebooks; \
+    mkdir -p /tmp; \
+    echo "Hello world" > /data/notebooks/hello.txt; \
+    chown nginx /data/notebooks

@@ -15,8 +15,10 @@ COPY dhapi /usr/share/nginx/html/jsapi
 COPY default.conf /etc/nginx/conf.d/
 COPY nginx.conf /etc/nginx/
 
+VOLUME /data
+
 RUN set -eux; \
-    mkdir -p /data/notebooks; \
+    mkdir -p /data/notebooks/test; \
     mkdir -p /tmp; \
     echo "Hello world" > /data/notebooks/hello.txt; \
     chown nginx /data/notebooks

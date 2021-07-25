@@ -1,5 +1,8 @@
 package io.deephaven.grpc_api.runner;
 
+import io.deephaven.appmode.ApplicationInjector;
+import io.deephaven.db.appmode.Application;
+import io.deephaven.db.appmode.ApplicationConfig;
 import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.session.SessionService;
@@ -44,7 +47,7 @@ public class DeephavenApiServer {
         }
     }
 
-    public static void startMain(PrintStream out, PrintStream err) throws IOException, InterruptedException {
+    public static void startMain(PrintStream out, PrintStream err) throws IOException, InterruptedException, ClassNotFoundException {
         final ServerComponent injector = DaggerDeephavenApiServer_ServerComponent
                 .builder()
                 .withPort(8080)
@@ -83,20 +86,23 @@ public class DeephavenApiServer {
     private final LiveTableMonitor ltm;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
+    private final ApplicationInjector applicationInjector;
 
     @Inject
     public DeephavenApiServer(
             final Server server,
             final LiveTableMonitor ltm,
             final LogInit logInit,
-            final ConsoleServiceGrpcImpl consoleService) {
+            final ConsoleServiceGrpcImpl consoleService,
+            final ApplicationInjector applicationInjector) {
         this.server = server;
         this.ltm = ltm;
         this.logInit = logInit;
         this.consoleService = consoleService;
+        this.applicationInjector = applicationInjector;
     }
 
-    private void start() throws IOException {
+    private void start() throws IOException, ClassNotFoundException {
         log.info().append("Configuring logging...").endl();
         logInit.run();
 
@@ -113,6 +119,8 @@ public class DeephavenApiServer {
 
         log.info().append("Starting server...").endl();
         server.start();
+
+        applicationInjector.run();
     }
 
     private void blockUntilShutdown() throws InterruptedException {

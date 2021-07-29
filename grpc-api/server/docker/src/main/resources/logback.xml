@@ -22,6 +22,8 @@
   <!--<logger name="io.netty" level="INFO"/>-->
   <!--<logger name="io.deephaven" level="INFO"/>-->
 
+  <logger name="io.deephaven.appmode.ApplicationInjector" level="DEBUG"/>
+
   <root level="info">
     <appender-ref ref="STDOUT" />
     <appender-ref ref="LOGBUFFER" />

@@ -10,7 +10,7 @@ services:
       # with max memory.
       #
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
-      - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=${IO_DEEPHAVEN_CONSOLE_TYPE}
+      - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=${IO_DEEPHAVEN_CONSOLE_TYPE} -DApplication.dir=/data/app.d
 
     expose:
       - '8080'

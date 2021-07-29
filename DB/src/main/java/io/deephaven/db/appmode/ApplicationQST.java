@@ -12,6 +12,8 @@ import java.util.Properties;
 @SimpleStyle
 public abstract class ApplicationQST implements ApplicationConfig {
 
+    public static final String TYPE = "qst";
+
     public static ApplicationQST of(Path file) {
         return ImmutableApplicationQST.of(file);
     }

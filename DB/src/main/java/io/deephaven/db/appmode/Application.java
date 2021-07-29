@@ -13,6 +13,8 @@ public abstract class Application {
 
     public interface Builder {
 
+        Builder id(String id);
+
         Builder name(String name);
 
         Builder putOutput(String key, Output value);
@@ -40,6 +42,14 @@ public abstract class Application {
         return ApplicationExec.of(config);
     }
 
+
+    /**
+     * The application id, should be unique and unchanging.
+     *
+     * @return the application id
+     */
+    public abstract String id();
+
     /**
      * The application name
      * @return the application name
@@ -51,5 +61,4 @@ public abstract class Application {
      * @return the labeled outputs
      */
     public abstract Map<String, Output> output(); // todo: should the keys be tickets?
-
 }

@@ -41,13 +41,13 @@ class ApplicationConfigImpl {
         }
         String type = properties.getProperty("type");
         switch (type) {
-            case "qst":
+            case ApplicationQST.TYPE:
                 return ApplicationQST.parse(properties);
-            case "groovy":
+            case ApplicationGroovyScript.TYPE:
                 return ApplicationGroovyScript.parse(properties);
-            case "python":
+            case ApplicationPythonScript.TYPE:
                 return ApplicationPythonScript.parse(properties);
-            case "class":
+            case ApplicationClass.TYPE:
                 return ApplicationClass.parse(properties);
         }
         throw new IllegalArgumentException("Unexpected type " + type);

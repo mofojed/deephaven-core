@@ -44,7 +44,7 @@ class ApplicationExec implements ApplicationConfig.Visitor {
             throw new UncheckedIOException(e);
         }
 
-        Builder builder = Application.builder().name(script.name());
+        Builder builder = Application.builder().id(script.id()).name(script.name());
         for (Map.Entry<String, Object> e : variables.entrySet()) {
             if (e.getValue() instanceof Table) {
                 builder.addOutput(e.getKey(), (Table)e.getValue());

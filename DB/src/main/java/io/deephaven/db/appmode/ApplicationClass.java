@@ -12,6 +12,8 @@ import java.util.Properties;
 @SimpleStyle
 public abstract class ApplicationClass<T extends Application.Factory> implements ApplicationConfig {
 
+    public static final String TYPE = "class";
+
     public static <T extends Application.Factory> ApplicationClass<T> of(Class<T> clazz) {
         return ImmutableApplicationClass.of(clazz);
     }

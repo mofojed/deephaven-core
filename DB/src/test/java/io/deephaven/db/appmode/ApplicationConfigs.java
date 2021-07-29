@@ -11,11 +11,11 @@ public class ApplicationConfigs {
     }
 
     static ApplicationGroovyScript app01() {
-        return ApplicationGroovyScript.of("My Groovy Application", resolve("01-groovy.groovy"));
+        return ApplicationGroovyScript.builder().id(ApplicationConfigs.class.getName() + ".app01").name("My Groovy Application").file(resolve("01-groovy.groovy")).build();
     }
 
     static ApplicationPythonScript app02() {
-        return ApplicationPythonScript.of("My Python Application", resolve("02-python.py"));
+        return ApplicationPythonScript.builder().id(ApplicationConfigs.class.getName() + ".app02").name("My Python Application").file(resolve("02-python.py")).build();
     }
 
     static ApplicationQST app03() {
@@ -38,6 +38,7 @@ public class ApplicationConfigs {
         @Override
         public final Application create() {
             return Application.builder()
+                    .id(ClassApplication.class.getName())
                     .name("My Class Application")
                     .addOutput("hello", TableTools.emptyTable(42))
                     .addOutput("world", TableTools.timeTable("00:00:01"))

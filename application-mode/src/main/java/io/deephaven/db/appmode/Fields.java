@@ -1,9 +1,7 @@
 package io.deephaven.db.appmode;
 
-import io.deephaven.api.BuildableStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -13,7 +11,6 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 @Immutable
-@BuildableStyle
 public abstract class Fields implements Iterable<Field<?>> {
 
     public static Builder builder() {
@@ -34,7 +31,6 @@ public abstract class Fields implements Iterable<Field<?>> {
         return fields().size();
     }
 
-    @NotNull
     @Override
     public final Iterator<Field<?>> iterator() {
         return fields().values().iterator();

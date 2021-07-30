@@ -1,6 +1,5 @@
 package io.deephaven.db.appmode;
 
-import io.deephaven.api.BuildableStyle;
 import org.immutables.value.Value.Immutable;
 
 import java.nio.file.Path;
@@ -8,7 +7,6 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 @Immutable
-@BuildableStyle
 public abstract class ApplicationPythonScript implements ApplicationConfig {
 
     public static final String TYPE = "python";

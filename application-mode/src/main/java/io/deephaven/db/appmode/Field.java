@@ -1,6 +1,5 @@
 package io.deephaven.db.appmode;
 
-import io.deephaven.api.BuildableStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
@@ -8,7 +7,6 @@ import javax.lang.model.SourceVersion;
 import java.util.Optional;
 
 @Immutable
-@BuildableStyle
 public abstract class Field<T> {
 
     public static <T> Field<T> of(String name, T value) {

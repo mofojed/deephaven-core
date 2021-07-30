@@ -1,6 +1,5 @@
 package io.deephaven.db.appmode;
 
-import io.deephaven.api.SimpleStyle;
 import io.deephaven.db.appmode.Application.Factory;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
@@ -9,7 +8,6 @@ import org.immutables.value.Value.Parameter;
 import java.util.Properties;
 
 @Immutable
-@SimpleStyle
 public abstract class ApplicationClass<T extends Application.Factory> implements ApplicationConfig {
 
     public static final String TYPE = "class";

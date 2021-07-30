@@ -1,10 +1,8 @@
 package io.deephaven.db.appmode;
 
-import io.deephaven.api.BuildableStyle;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
-@BuildableStyle
 public abstract class Application {
 
     public interface Builder {

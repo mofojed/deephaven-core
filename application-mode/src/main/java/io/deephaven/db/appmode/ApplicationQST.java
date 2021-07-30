@@ -1,6 +1,5 @@
 package io.deephaven.db.appmode;
 
-import io.deephaven.api.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -9,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 @Immutable
-@SimpleStyle
 public abstract class ApplicationQST implements ApplicationConfig {
 
     public static final String TYPE = "qst";

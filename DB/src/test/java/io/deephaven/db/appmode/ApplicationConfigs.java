@@ -1,5 +1,6 @@
 package io.deephaven.db.appmode;
 
+import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.utils.TableTools;
 
 import java.nio.file.Path;
@@ -37,11 +38,12 @@ public class ApplicationConfigs {
 
         @Override
         public final Application create() {
+            Field<Table> hello = Field.of("hello", TableTools.emptyTable(42).view("I=i"), "A table with one column 'I' and 42 rows, 0-41.");
+            Field<Table> world = Field.of("world", TableTools.timeTable("00:00:01"));
             return Application.builder()
                     .id(ClassApplication.class.getName())
                     .name("My Class Application")
-                    .addOutput("hello", TableTools.emptyTable(42))
-                    .addOutput("world", TableTools.timeTable("00:00:01"))
+                    .fields(Fields.of(hello, world))
                     .build();
         }
     }

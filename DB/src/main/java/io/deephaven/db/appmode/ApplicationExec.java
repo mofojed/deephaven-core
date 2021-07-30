@@ -2,9 +2,7 @@ package io.deephaven.db.appmode;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import io.deephaven.db.appmode.Application.Builder;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.TableMap;
+import io.deephaven.db.appmode.Fields.Builder;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,13 +26,6 @@ class ApplicationExec implements ApplicationConfig.Visitor {
 
     @Override
     public void visit(ApplicationGroovyScript script) {
-
-        // todo: should we consider adding a "callback" to the context that scripts are expected to invoke for exports?
-        // ie:
-        //
-        // t = ...
-        // export("myTable", t)
-
         Map<String, Object> variables = new LinkedHashMap<>();
         Binding binding = new Binding(variables);
         GroovyShell groovyShell = new GroovyShell(binding);
@@ -43,16 +34,11 @@ class ApplicationExec implements ApplicationConfig.Visitor {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-
-        Builder builder = Application.builder().id(script.id()).name(script.name());
+        Builder builder = Fields.builder();
         for (Map.Entry<String, Object> e : variables.entrySet()) {
-            if (e.getValue() instanceof Table) {
-                builder.addOutput(e.getKey(), (Table)e.getValue());
-            } else if (e.getValue() instanceof TableMap) {
-                builder.addOutput(e.getKey(), (TableMap)e.getValue());
-            }
+            builder.addFields(Field.of(e.getKey(), e.getValue()));
         }
-        out = builder.build();
+        out = Application.builder().id(script.id()).name(script.name()).fields(builder.build()).build();
     }
 
     @Override

@@ -2,7 +2,7 @@ package io.deephaven.appmode;
 
 import io.deephaven.db.appmode.Application;
 import io.deephaven.db.appmode.ApplicationConfig;
-import io.deephaven.db.appmode.Output;
+import io.deephaven.db.appmode.Field;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.ScriptSession;
 import io.deephaven.db.v2.TableMap;
@@ -13,7 +13,6 @@ import io.deephaven.io.logger.Logger;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
 
 public class ApplicationInjector {
@@ -51,34 +50,23 @@ public class ApplicationInjector {
         log.info().append("Starting application '").append(application.name()).append('\'').endl();
 
         ScriptSession session = globalSessionProvider.getGlobalSession();
-        for (Entry<String, Output> e : application.output().entrySet()) {
-            e.getValue().walk(new ManageOutput(session, application.name(), e.getKey()));
-        }
-    }
 
-    private static class ManageOutput implements Output.Visitor {
-        private final ScriptSession session;
-        private final String appName;
-        private final String name;
+        for (Field<?> field : application.fields()) {
 
-        ManageOutput(ScriptSession session, String appName, String name) {
-            this.session = Objects.requireNonNull(session);
-            this.appName = Objects.requireNonNull(appName);
-            this.name = Objects.requireNonNull(name);
-        }
+            // todo: use registration pattern based on class name
 
-        @Override
-        public void visit(Table table) {
-            log.debug().append("Application '").append(appName).append("', managing Table '").append(name).append('\'').endl();
-            session.setVariable(name, table);
-            session.manage(table);
-        }
-
-        @Override
-        public void visit(TableMap tableMap) {
-            log.debug().append("Application '").append(appName).append("', managing TableMap '").append(name).append('\'').endl();
-            session.setVariable(name, tableMap);
-            session.manage(tableMap);
+            Object value = field.value();
+            if (value instanceof Table) {
+                log.debug().append("Application '").append(application.name()).append("', managing Table '").append(field.name()).append('\'').endl();
+                session.setVariable(field.name(), value);
+                session.manage((Table)value);
+            } else if (value instanceof TableMap) {
+                log.debug().append("Application '").append(application.name()).append("', managing TableMap '").append(field.name()).append('\'').endl();
+                session.setVariable(field.name(), value);
+                session.manage((TableMap)value);
+            } else {
+                log.warn().append("Application '").append(application.name()).append("', unable to manage '").append(field.name()).append('\'').endl();
+            }
         }
     }
 }

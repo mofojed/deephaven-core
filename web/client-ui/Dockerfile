@@ -2,7 +2,7 @@ FROM docker.io/library/node:14.16.0 AS node
 WORKDIR /usr/src/app
 
 FROM node as build
-ARG WEB_VERSION=0.4.0
+ARG WEB_VERSION=0.1.4-markdownnotebooks.102
 
 # Pull in the published package from npmjs and extract is
 RUN set -eux; \

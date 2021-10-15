@@ -10,6 +10,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Ca
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelCommandResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ExecuteCommandRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchDataStringRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchDataStringResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest;
@@ -307,6 +309,99 @@ public class ConsoleServiceClient {
         @JsOverlay
         default boolean isExecuteCommandMetadata_or_callbackFn() {
             return (Object) this instanceof ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn;
+        }
+    }
+
+    @JsFunction
+    public interface FetchDataStringCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static ConsoleServiceClient.FetchDataStringCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                ConsoleServiceClient.FetchDataStringCallbackFn.P0Type p0, FetchDataStringResponse p1);
+    }
+
+    @JsFunction
+    public interface FetchDataStringMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static ConsoleServiceClient.FetchDataStringMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                ConsoleServiceClient.FetchDataStringMetadata_or_callbackFn.P0Type p0,
+                FetchDataStringResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface FetchDataStringMetadata_or_callbackUnionType {
+        @JsOverlay
+        static ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default ConsoleServiceClient.FetchDataStringMetadata_or_callbackFn asFetchDataStringMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isFetchDataStringMetadata_or_callbackFn() {
+            return (Object) this instanceof ConsoleServiceClient.FetchDataStringMetadata_or_callbackFn;
         }
     }
 
@@ -844,6 +939,58 @@ public class ConsoleServiceClient {
     public native UnaryResponse executeCommand(
             ExecuteCommandRequest requestMessage,
             ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
+
+    @JsOverlay
+    public final UnaryResponse fetchDataString(
+            FetchDataStringRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.FetchDataStringCallbackFn callback) {
+        return fetchDataString(
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse fetchDataString(
+            FetchDataStringRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return fetchDataString(
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse fetchDataString(
+            FetchDataStringRequest requestMessage,
+            ConsoleServiceClient.FetchDataStringMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.FetchDataStringCallbackFn callback) {
+        return fetchDataString(
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse fetchDataString(
+            FetchDataStringRequest requestMessage,
+            ConsoleServiceClient.FetchDataStringMetadata_or_callbackFn metadata_or_callback) {
+        return fetchDataString(
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse fetchDataString(
+            FetchDataStringRequest requestMessage,
+            ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.FetchDataStringCallbackFn callback);
+
+    public native UnaryResponse fetchDataString(
+            FetchDataStringRequest requestMessage,
+            ConsoleServiceClient.FetchDataStringMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchFigure(

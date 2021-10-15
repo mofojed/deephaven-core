@@ -98,6 +98,9 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             } else {
                 recentField = true;
             }
+            if (field == null) {
+                continue;
+            }
 
             // Note the order w.r.t. the tracker is intentional to avoid dropping ref count to zero
             Object newValue = scriptSession.unwrapObject(scriptSession.getVariable(name));

@@ -1,9 +1,6 @@
 package io.deephaven.web.client.api;
 
-import elemental2.core.JsArray;
-import elemental2.core.JsSet;
-import elemental2.core.JsWeakMap;
-import elemental2.core.Uint8Array;
+import elemental2.core.*;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
@@ -25,9 +22,7 @@ import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
@@ -680,8 +675,8 @@ public class WorkerConnection {
                 return (Promise) getFigure(definition);
             case Pandas:
                 return (Promise) getPandas(definition);
-//            case DataString:
-//                return (Promise) getDataString(definition);
+            case DataString:
+                return (Promise) getDataString(definition);
             // case OtherWidget:
             // return (Promise) getWidget(definition.getName());
             // case TableMap:
@@ -802,6 +797,18 @@ public class WorkerConnection {
                     request.setSourceId(TableTicket.createTicket(varDef));
                     consoleServiceClient().fetchFigure(request, metadata(), c::apply);
                 }).refetch());
+    }
+
+    public Promise<String> getDataString(JsVariableDefinition varDef) {
+        return whenServerReady("get a data string")
+                .then(server -> {
+                    FetchDataStringRequest request = new FetchDataStringRequest();
+                    request.setSourceId(TableTicket.createTicket(varDef));
+                    Promise<FetchDataStringResponse> fetchPromise = Callbacks.grpcUnaryPromise(c -> {
+                        consoleServiceClient().fetchDataString(request, metadata(), c::apply);
+                    });
+                    return fetchPromise.then(response -> Promise.resolve(response.getValue()));
+                });
     }
 
     public void registerFigure(JsFigure figure) {

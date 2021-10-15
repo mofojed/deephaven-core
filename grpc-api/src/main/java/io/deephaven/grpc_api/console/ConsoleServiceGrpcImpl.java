@@ -401,6 +401,35 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
+    @Override
+    public void fetchDataString(FetchDataStringRequest request, StreamObserver<FetchDataStringResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+            if (request.getSourceId().getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
+            }
+            final SessionState.ExportObject<Object> dataString = ticketRouter.resolve(
+                    session, request.getSourceId(), "sourceId");
+
+            session.nonExport()
+                    .require(dataString)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        Object result = dataString.get();
+                        if (!(result instanceof String)) {
+                            final String name = ticketRouter.getLogNameFor(request.getSourceId(), "sourceId");
+                            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                                    "Value bound to ticket " + name + " is not a String");
+                        }
+                        String value = (String) result;
+
+                        responseObserver
+                                .onNext(FetchDataStringResponse.newBuilder().setValue(value).build());
+                        responseObserver.onCompleted();
+                    });
+        });
+    }
+
     private static class LogBufferStreamAdapter extends SessionCloseableObserver<LogSubscriptionData>
             implements LogBufferRecordListener {
         private final LogSubscriptionRequest request;

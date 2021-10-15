@@ -12,8 +12,9 @@ public class JsVariableChanges {
             TABLEMAP = "TableMap",
             FIGURE = "Figure",
             OTHERWIDGET = "OtherWidget",
+            DATA_STRING = "DataString",
             PANDAS = "Pandas";
-    private static final String[] WidgetTypeLookup = {OTHERWIDGET, TABLE, TREETABLE, TABLEMAP, FIGURE, PANDAS};
+    private static final String[] WidgetTypeLookup = {OTHERWIDGET, TABLE, TREETABLE, TABLEMAP, FIGURE, PANDAS, DATA_STRING};
 
     public static String getVariableTypeFromFieldCase(int fieldCase) {
         if (fieldCase >= 1 && fieldCase <= WidgetTypeLookup.length) {

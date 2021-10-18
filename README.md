@@ -1,5 +1,7 @@
 # Deephaven Community Core
 
+HELLO! WORLD!
+
 ![Deephaven Data Labs Logo](docs/images/Deephaven_GH_Logo.svg)
 
 Deephaven Community Core is a real-time, time-series, column-oriented analytics engine

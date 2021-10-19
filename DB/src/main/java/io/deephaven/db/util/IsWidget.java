@@ -12,6 +12,7 @@ import org.jpy.PyObject;
  * Get a widget from an object.
  */
 public class IsWidget {
+    private static final String GET_DEEPHAVEN_OBJECT_ATTRIBUTE = "getDeephavenObject";
     private static final String GET_WIDGET_ATTRIBUTE = "getWidget";
     private static final String GET_WIDGET_VISIBILITY_ATTRIBUTE = "getValidGroups";
     private static final String GET_TABLE_ATTRIBUTE = "get_dh_table";
@@ -115,5 +116,24 @@ public class IsWidget {
         }
 
         throw new OperationException("Can not convert pyObject=" + pyObject + " to a Table.");
+    }
+
+    public static boolean isDeephavenObject(Object value) {
+        return value instanceof PyObject && ((PyObject) value).hasAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE);
+    }
+
+    public static String getDeephavenObject(Object value) {
+        if (value instanceof PyObject) {
+            return getDeephavenObject((PyObject) value);
+        }
+        throw new OperationException("Can not convert value=" + value + " to a PyObject.");
+    }
+
+    public static String getDeephavenObject(PyObject pyObject) {
+        if (pyObject.hasAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE)) {
+            return pyObject.getAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE).getStringValue();
+        }
+
+        throw new OperationException("Can not convert pyObject=" + pyObject + " to a Deephaven Object.");
     }
 }

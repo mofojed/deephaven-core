@@ -5,6 +5,8 @@ import io.deephaven.db.tables.utils.FigureWidgetMarker;
 import io.deephaven.db.tables.utils.LiveWidget;
 import io.deephaven.db.tables.utils.PandasWidgetMarker;
 import io.deephaven.db.v2.TableMap;
+import org.jpy.PyLib;
+
 import static io.deephaven.db.tables.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
 import static io.deephaven.db.tables.Table.NON_DISPLAY_TABLE;
 
@@ -16,6 +18,7 @@ public enum ExportedObjectType {
     OtherWidget,
     Pandas,
     DataString,
+    DeephavenObject,
     NonDisplayable;
 
     public static ExportedObjectType fromObject(Object value) {
@@ -39,8 +42,8 @@ public enum ExportedObjectType {
             }
         } else if (value instanceof TableMap) {
             return ExportedObjectType.TableMap;
-        } else if (value instanceof String) {
-            return ExportedObjectType.DataString;
+        } else if (IsWidget.isDeephavenObject(value)) {
+            return ExportedObjectType.DeephavenObject;
         }
         return NonDisplayable;
     }

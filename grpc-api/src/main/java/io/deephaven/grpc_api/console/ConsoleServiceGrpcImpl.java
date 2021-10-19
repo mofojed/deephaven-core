@@ -201,6 +201,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
+        // TODO?: If there's a
         return VariableDefinition.newBuilder().setTitle(entry.getKey()).setType(entry.getValue().name())
                 .setId(ScopeTicketResolver.ticketForName(entry.getKey())).build();
     }

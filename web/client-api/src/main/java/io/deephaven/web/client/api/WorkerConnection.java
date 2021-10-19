@@ -664,9 +664,22 @@ public class WorkerConnection {
         });
     }
 
+    private VariableType getVariableType(String type) {
+        try {
+            return VariableType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     public Promise<Object> getObject(JsVariableDefinition definition) {
-        switch (VariableType.valueOf(definition.getType())) {
+        VariableType varType = getVariableType(definition.getType());
+        if (varType == null) {
+            // Must be a custom type, just get the str
+            return (Promise) getDataString(definition);
+        }
+        switch (varType) {
             case Table:
                 return (Promise) getTable(definition);
             case TreeTable:
@@ -675,8 +688,6 @@ public class WorkerConnection {
                 return (Promise) getFigure(definition);
             case Pandas:
                 return (Promise) getPandas(definition);
-            case DataString:
-                return (Promise) getDataString(definition);
             // case OtherWidget:
             // return (Promise) getWidget(definition.getName());
             // case TableMap:

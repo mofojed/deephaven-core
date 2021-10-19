@@ -13,6 +13,7 @@ import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
+import org.jpy.PyObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +40,20 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         if (!directory.mkdirs()) {
             throw new UncheckedDeephavenException(
                     "Failed to create class cache directory " + directory.getAbsolutePath());
+        }
+    }
+
+    private static String getExportedType(Object value) {
+        ExportedObjectType objectType = ExportedObjectType.fromObject(value);
+        if (objectType == ExportedObjectType.NonDisplayable) {
+            return null;
+        } else if (objectType == ExportedObjectType.DeephavenObject) {
+            PyObject pyClassObject = ((PyObject)value).getAttribute("__class__");
+            String module = pyClassObject.getAttribute("__module__").toString();
+            String className = pyClassObject.getAttribute("__name__").toString();
+            return module + "." + className;
+        } else {
+            return objectType.name();
         }
     }
 
@@ -145,13 +160,13 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     private void applyVariableChangeToDiff(final Changes diff, String name,
             @Nullable Object fromValue, @Nullable Object toValue) {
         fromValue = unwrapObject(fromValue);
-        final ExportedObjectType fromType = ExportedObjectType.fromObject(fromValue);
-        if (!fromType.isDisplayable()) {
+        final String fromType = getExportedType(fromValue);
+        if (fromType == null) {
             fromValue = null;
         }
         toValue = unwrapObject(toValue);
-        final ExportedObjectType toType = ExportedObjectType.fromObject(toValue);
-        if (!toType.isDisplayable()) {
+        final String toType = getExportedType(toValue);
+        if (toType == null) {
             toValue = null;
         }
         if (fromValue == toValue) {
@@ -162,7 +177,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             diff.created.put(name, toType);
         } else if (toValue == null) {
             diff.removed.put(name, fromType);
-        } else if (fromType != toType) {
+        } else if (!fromType.equals(toType)) {
             diff.created.put(name, toType);
             diff.removed.put(name, fromType);
         } else {

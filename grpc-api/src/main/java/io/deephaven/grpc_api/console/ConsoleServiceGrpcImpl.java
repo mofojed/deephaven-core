@@ -8,11 +8,7 @@ import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.db.plot.FigureWidget;
 import io.deephaven.db.tables.Table;
-import io.deephaven.db.util.DelegatingScriptSession;
-import io.deephaven.db.util.ExportedObjectType;
-import io.deephaven.db.util.NoLanguageDeephavenSession;
-import io.deephaven.db.util.ScriptSession;
-import io.deephaven.db.util.VariableProvider;
+import io.deephaven.db.util.*;
 import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionCloseableObserver;
@@ -200,10 +196,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
-        // TODO?: If there's a
-        return VariableDefinition.newBuilder().setTitle(entry.getKey()).setType(entry.getValue().name())
-                .setId(ScopeTicketResolver.ticketForName(entry.getKey())).build();
+    private static VariableDefinition makeVariableDefinition(Map.Entry<String, String> entry) {
+        return VariableDefinition.newBuilder()
+                .setTitle(entry.getKey())
+                .setType(entry.getValue())
+                .setId(ScopeTicketResolver.ticketForName(entry.getKey()))
+                .build();
     }
 
     @Override
@@ -409,20 +407,20 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             if (request.getSourceId().getTicket().isEmpty()) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
             }
-            final SessionState.ExportObject<Object> dataString = ticketRouter.resolve(
+            final SessionState.ExportObject<Object> exportObject = ticketRouter.resolve(
                     session, request.getSourceId(), "sourceId");
 
             session.nonExport()
-                    .require(dataString)
+                    .require(exportObject)
                     .onError(responseObserver)
                     .submit(() -> {
-                        Object result = dataString.get();
-                        if (!(result instanceof String)) {
+                        Object result = exportObject.get();
+                        if (!IsWidget.isDeephavenObject(result)) {
                             final String name = ticketRouter.getLogNameFor(request.getSourceId(), "sourceId");
                             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                                    "Value bound to ticket " + name + " is not a String");
+                                    "Value bound to ticket " + name + " is not a DeephavenObject");
                         }
-                        String value = (String) result;
+                        String value = IsWidget.getDeephavenObject(result);
 
                         responseObserver
                                 .onNext(FetchDataStringResponse.newBuilder().setValue(value).build());

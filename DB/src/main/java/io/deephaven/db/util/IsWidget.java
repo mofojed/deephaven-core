@@ -119,21 +119,19 @@ public class IsWidget {
     }
 
     public static boolean isDeephavenObject(Object value) {
-        return value instanceof PyObject && ((PyObject) value).hasAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE);
+        if (!(value instanceof PyObject)) {
+            return false;
+        }
+        PyObject pyObject = (PyObject) value;
+        return pyObject.hasAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE)
+                && pyObject.getAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE).isCallable();
     }
 
     public static String getDeephavenObject(Object value) {
-        if (value instanceof PyObject) {
-            return getDeephavenObject((PyObject) value);
-        }
-        throw new OperationException("Can not convert value=" + value + " to a PyObject.");
-    }
-
-    public static String getDeephavenObject(PyObject pyObject) {
-        if (pyObject.hasAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE)) {
-            return pyObject.getAttribute(GET_DEEPHAVEN_OBJECT_ATTRIBUTE).getStringValue();
+        if (!isDeephavenObject(value)) {
+            throw new OperationException("value=" + value + " is not a Deephaven Object");
         }
 
-        throw new OperationException("Can not convert pyObject=" + pyObject + " to a Deephaven Object.");
+        return ((PyObject)value).call(GET_DEEPHAVEN_OBJECT_ATTRIBUTE).toString();
     }
 }

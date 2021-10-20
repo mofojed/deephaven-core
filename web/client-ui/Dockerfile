@@ -2,7 +2,7 @@ FROM docker.io/library/node:14.16.0 AS node
 WORKDIR /usr/src/app
 
 FROM node as build
-ARG WEB_VERSION=0.5.1
+ARG WEB_VERSION=0.5.2-matplotlib.2
 
 # Pull in the published package from npmjs and extract is
 RUN set -eux; \

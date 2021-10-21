@@ -18,6 +18,17 @@ def _getDeephavenObject(self):
 
 import matplotlib.pyplot as plt
 import matplotlib
+plt.style.use('dark_background')
+matplotlib.rcParams['axes.prop_cycle'] = matplotlib.cycler(color=['#76d9e4', '#9edc6f', '#fcd65b', '#aa9af4', '#f37e3f', '#f95d84', '#f0f0ee'])
+matplotlib.rcParams['axes.facecolor'] = '#2d2a2e'
+matplotlib.rcParams['axes.edgecolor'] = '#f0f0ee'
+matplotlib.rcParams['axes.labelcolor'] = '#f0f0ee'
+matplotlib.rcParams['xtick.color'] = '#f0f0ee'
+matplotlib.rcParams['ytick.color'] = '#f0f0ee'
+matplotlib.rcParams['grid.color'] = '#f0f0ee'
+matplotlib.rcParams['savefig.facecolor'] = '#2d2a2e'
+matplotlib.rcParams['text.color'] = '#f0f0ee'
+matplotlib.rcParams['lines.color'] = '#f0f0ee'
 matplotlib.figure.Figure.getDeephavenObject = _getDeephavenObject
 ```
 4. Run the following command to create a plot 

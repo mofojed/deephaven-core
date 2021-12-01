@@ -2,10 +2,10 @@ package io.deephaven.grpc_api.appmode;
 
 import com.google.rpc.Code;
 import io.deephaven.appmode.*;
-import io.deephaven.db.util.GroovyDeephavenSession;
-import io.deephaven.db.util.PythonDeephavenSession;
-import io.deephaven.db.util.ScriptSession;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.engine.util.GroovyDeephavenSession;
+import io.deephaven.engine.util.PythonDeephavenSession;
+import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 
 import java.nio.file.Path;
 import java.util.List;

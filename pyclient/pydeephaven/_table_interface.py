@@ -87,7 +87,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update_view(self, formulas: List[str]):
-        """ Perform a update-view operation on the table and return the result table.
+        """ Perform an update-view operation on the table and return the result table.
 
         Args:
             formulas (List[str]): the column formulas
@@ -366,7 +366,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.ARRAY, column_names=by)
+        table_op = DedicatedAggOp(AggType.GROUP, column_names=by)
         return self.table_op_handler(table_op)
 
     def ungroup(self, cols: List[str] = [], null_fill: bool = True):
@@ -564,12 +564,12 @@ class TableInterface(ABC):
         table_op = DedicatedAggOp(AggType.COUNT, count_column=col)
         return self.table_op_handler(table_op)
 
-    def combo_by(self, by: List[str], agg: ComboAggregation):
+    def agg_by(self, agg: ComboAggregation, by: List[str]):
         """ Perform a Combined Aggregation operation on the table and return the result table.
 
         Args:
-            by (List[str]): the group-by column names
             agg (ComboAggregation): the combined aggregation definition
+            by (List[str]): the group-by column names
 
         Returns:
             a Table object

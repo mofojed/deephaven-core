@@ -4,10 +4,11 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableAdapterResults.Output;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
+import io.deephaven.qst.table.GroupByTable;
 import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.MergeTable;
@@ -234,19 +235,24 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(ByTable byTable) {
-        addOp(byTable, parentOps(byTable).by(byTable.columns()));
+    public void visit(GroupByTable groupByTable) {
+        addOp(groupByTable, parentOps(groupByTable).groupBy(groupByTable.columns()));
     }
 
     @Override
     public void visit(AggregationTable aggregationTable) {
-        addOp(aggregationTable, parentOps(aggregationTable).by(aggregationTable.columns(),
-                aggregationTable.aggregations()));
+        addOp(aggregationTable,
+                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.columns()));
     }
 
     @Override
     public void visit(TicketTable ticketTable) {
         addTable(ticketTable, tableCreation.of(ticketTable));
+    }
+
+    @Override
+    public void visit(InputTable inputTable) {
+        addTable(inputTable, tableCreation.of(inputTable));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

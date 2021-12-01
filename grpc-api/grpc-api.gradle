@@ -5,9 +5,6 @@ plugins {
 def boringSslVersion = '2.0.34.Final'
 
 configurations {
-    compile.extendsFrom dhDb
-    testCompile.extendsFrom dhDbTest
-
     // custom configuration, sourceset, test task to keep flight-core off the main/test classpath
     flightTestCompile.extendsFrom(testCompile)
 }
@@ -25,34 +22,40 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':DB'),
+    compile project(':engine-table'),
+            project(':extensions-csv'),
+            project(':extensions-parquet-table'),
             project(':Util'),
-            project(':grpc-api-client'),
+            project(':java-client-barrage-dagger'),
             project(':proto:proto-backplane-grpc-flight'),
             project(':open-api-lang-tools'),
             project(':log-factory'),
             project(':application-mode'),
-            "com.google.flatbuffers:flatbuffers-java:1.12.0"
+            'com.github.f4b6a3:uuid-creator:3.6.0'
 
-    compile 'com.google.dagger:dagger:2.31.1'
-    annotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
-    testAnnotationProcessor 'com.google.dagger:dagger-compiler:2.31.1'
+    Classpaths.inheritFlatbuffer(project, 'compile')
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
 
     compile project(':Plot')
 
     compile project(':ClientSupport')
 
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
-        runtimeOnly project(':classgraph-extension')
+        runtimeOnly project(':extensions-classgraph')
     }
     if ('true' == project.findProperty('extensions.suanshu.enabled')) {
-        runtimeOnly project(':suanshu-extension')
+        runtimeOnly project(':extensions-suanshu')
     }
 
-    testCompile TestTools.projectDependency(project, 'DB'),
+    testCompile TestTools.projectDependency(project, 'engine-table'),
                 TestTools.projectDependency(project, 'Util')
 
-    runtimeOnly project(':Numerics'), project(':Integrations'), project(':Kafka')
+    runtimeOnly project(':Numerics'),
+            project(':Integrations'),
+            project(':extensions-kafka')
+    Classpaths.inheritAssertJ(project)
 
     runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}"
     testRuntimeOnly project(':log-to-slf4j')
@@ -62,11 +65,13 @@ dependencies {
     Classpaths.inheritArrow(project, 'flight-grpc', 'flightTestCompile')
 }
 
-// testOutOfBand: non-parallel, not a db test, not isolated
-TestTools.addDbTest(project, 'OutOfBand', false, false, false)
+// testOutOfBand: non-parallel, not a engine test, not isolated
+TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
 
 check.dependsOn(tasks.register('flightTest', Test) {
     classpath = sourceSets.flightTest.runtimeClasspath
     testClassesDirs = sourceSets.flightTest.output.classesDirs
-    systemProperty "LiveTableMonitor.allowUnitTestMode", false
+    systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
 })
+
+apply plugin: 'io.deephaven.java-open-nio'

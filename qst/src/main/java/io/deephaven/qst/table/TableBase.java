@@ -11,6 +11,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.qst.TableCreationLogic;
+import io.deephaven.qst.table.TableSchema.Visitor;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -402,13 +403,13 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final ByTable by() {
-        return ByTable.builder().parent(this).build();
+    public final GroupByTable groupBy() {
+        return GroupByTable.builder().parent(this).build();
     }
 
     @Override
-    public final ByTable by(String... groupByColumns) {
-        ByTable.Builder builder = ByTable.builder().parent(this);
+    public final GroupByTable groupBy(String... groupByColumns) {
+        GroupByTable.Builder builder = GroupByTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
             builder.addColumns(Selectable.parse(groupByColumn));
         }
@@ -416,15 +417,55 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final ByTable by(Collection<? extends Selectable> groupByColumns) {
-        return ByTable.builder().parent(this).addAllColumns(groupByColumns).build();
+    public final GroupByTable groupBy(Collection<? extends Selectable> groupByColumns) {
+        return GroupByTable.builder().parent(this).addAllColumns(groupByColumns).build();
     }
 
     @Override
-    public final AggregationTable by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations) {
+    public final AggregationTable aggBy(Aggregation aggregation) {
+        return AggregationTable.builder().parent(this).addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
+        final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+        return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
+                .addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations) {
+        return AggregationTable.builder().parent(this).addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
                 .addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final <V extends TableSchema.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
     }
 
     @Override

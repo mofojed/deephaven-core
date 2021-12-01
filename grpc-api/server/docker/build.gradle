@@ -5,7 +5,7 @@ plugins {
   id 'com.bmuschko.docker-java-application'
 }
 
-evaluationDependsOn(":Integrations")
+evaluationDependsOn(':docker-runtime-base')
 
 dependencies {
   implementation(project(':grpc-api')) {
@@ -18,7 +18,7 @@ dependencies {
   Classpaths.inheritSlf4j(project, 'jcl-over-slf4j', 'runtimeOnly')
   runtimeOnly project(':logback-print-stream-globals')
   runtimeOnly project(':logback-logbuffer')
-  runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
+  Classpaths.inheritLogbackClassic(project)
 }
 
 
@@ -60,7 +60,7 @@ docker {
         '-XX:MaxGCPauseMillis=100',
         '-XX:+UseStringDeduplication',
 	    // Add for debugging, select port to match what you expect from your debugger/IDE side.
-	    // '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
+	    // '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005',
 
         // Settings based on the cgroup limits:
         // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
@@ -73,6 +73,10 @@ docker {
         '-XX:MinRAMPercentage=70.0',
         // the percentage of system memory that the JVM will use as maximum
         '-XX:MaxRAMPercentage=80.0',
+
+        // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
+        '--add-opens', 'java.base/java.nio=ALL-UNNAMED',
+
         '-XshowSettings:vm'
     ]
   }
@@ -132,9 +136,11 @@ docker {
 
 
 // deephaven/runtime-base
-def grpcApiBase = project(':Integrations').tasks.findByName('buildDeephavenPython')
+def grpcApiBase = project(':docker-runtime-base').tasks.findByName('buildDocker')
 dockerBuildImage.dependsOn grpcApiBase
 dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
+
+// TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
 // Currently, GH build-ci.yml calls dockerCreateDockerfile, and relies on buildx; so we need to
 // make sure that dockerCreateDockerfile has the proper dependencies.
 // If we change how our build works in the future (so that gradle is responsible for pushing the
@@ -145,3 +151,5 @@ dockerCreateDockerfile.dependsOn grpcApiBase
 //dockerCreateDockerfile.environmentVariable("DH_TLS_KEY", "/etc/ssl/grpc/tls.key")
 assemble.dependsOn dockerBuildImage
 dockerBuildImage.outputs.upToDateWhen { t -> return Docker.isImageUpToDate(t) }
+
+apply plugin: 'io.deephaven.java-open-nio'

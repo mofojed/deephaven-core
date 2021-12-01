@@ -6,21 +6,21 @@ package io.deephaven.grpc_api.console;
 
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.plot.FigureWidget;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.util.DelegatingScriptSession;
-import io.deephaven.db.util.ExportedObjectType;
-import io.deephaven.db.util.NoLanguageDeephavenSession;
-import io.deephaven.db.util.ScriptSession;
-import io.deephaven.db.util.VariableProvider;
-import io.deephaven.db.v2.DynamicNode;
+import io.deephaven.plot.FigureWidget;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.DelegatingScriptSession;
+import io.deephaven.engine.util.ExportedObjectType;
+import io.deephaven.engine.util.NoLanguageDeephavenSession;
+import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.VariableProvider;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.figures.FigureWidgetTranslator;
 import io.deephaven.grpc_api.session.SessionCloseableObserver;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.util.GrpcUtil;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
@@ -44,8 +44,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecute;
-import static io.deephaven.grpc_api.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 
 @Singleton
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {

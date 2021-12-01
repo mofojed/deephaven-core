@@ -2,20 +2,11 @@ package io.deephaven.grpc_api.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.healthcheck.HealthCheckModule;
-import io.deephaven.grpc_api.session.SessionService;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.util.process.ShutdownManager;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.util.concurrent.TimeUnit;
 
 @Singleton
 @Component(modules = {
@@ -25,16 +16,12 @@ import java.util.concurrent.TimeUnit;
 })
 public interface DeephavenApiServerComponent {
 
-    @Singleton
     DeephavenApiServer getServer();
-
-    @Singleton
-    SessionService getSessionService();
 
     @Component.Builder
     interface Builder {
         @BindsInstance
-        Builder withPort(@Named("grpc.port") int port);
+        Builder withPort(@Named("http.port") int port);
 
         @BindsInstance
         Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
@@ -48,28 +35,6 @@ public interface DeephavenApiServerComponent {
         @BindsInstance
         Builder withErr(@Named("err") PrintStream err);
 
-        @BindsInstance
-        Builder withAppMode(AppMode appMode);
-
         DeephavenApiServerComponent build();
-    }
-
-    static void startMain(PrintStream out, PrintStream err, final Configuration config)
-            throws IOException, InterruptedException, ClassNotFoundException {
-        final int port = config.getIntegerWithDefault("grpc-api.port", 8888);
-        final Logger log = LoggerFactory.getLogger(DeephavenApiServerComponent.class);
-        log.info().append("grpc-api port is: ").append(port).endl();
-        final DeephavenApiServerComponent injector = DaggerDeephavenApiServerComponent
-                .builder()
-                .withSchedulerPoolSize(4)
-                .withPort(port)
-                .withSessionTokenExpireTmMs(300000) // defaults to 5 min
-                .withOut(out)
-                .withErr(err)
-                .withAppMode(AppMode.currentMode())
-                .build();
-        final DeephavenApiServer server = injector.getServer();
-        final SessionService sessionService = injector.getSessionService();
-        DeephavenApiServer.start(server, sessionService);
     }
 }

@@ -40,6 +40,7 @@ public class DeephavenApiServer {
     private final ApplicationInjector applicationInjector;
     private final UriResolvers uriResolvers;
     private final SessionService sessionService;
+    private final HealthStatusManager healthStatusManager;
 
     @Inject
     public DeephavenApiServer(

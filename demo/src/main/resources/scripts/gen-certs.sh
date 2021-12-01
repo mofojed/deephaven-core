@@ -229,6 +229,7 @@ EOF
         -config "${CA_CONF_FILE}" \
         -key "${KEY_CA_FILE}" \
         -sha256 -nodes \
+        -days "${CERT_TTL}" \
         -out "$CERT_CA_FILE" \
         -subj "$CERT_SUBJECT"
 

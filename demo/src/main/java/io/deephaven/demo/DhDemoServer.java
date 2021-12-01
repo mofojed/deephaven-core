@@ -29,8 +29,8 @@ import org.jboss.logging.Logger;
 
 import javax.enterprise.inject.spi.CDI;
 import javax.inject.Inject;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -55,6 +55,7 @@ import static io.deephaven.demo.NameConstants.*;
 public class DhDemoServer implements QuarkusApplication {
 
     private static final Logger LOG = Logger.getLogger(DhDemoServer.class);
+    private static String[] demoHtml;
 
     private final Vertx vertx;
 
@@ -83,6 +84,12 @@ public class DhDemoServer implements QuarkusApplication {
             generateHelm(Arrays.asList(args));
             return;
         }
+        final InputStream res = DhDemoServer.class.getResourceAsStream("index.html");
+
+        demoHtml = new BufferedReader(
+                new InputStreamReader(res, StandardCharsets.UTF_8))
+                .lines()
+                .collect(Collectors.joining("\n")).split("__URI__");
         Quarkus.run(DhDemoServer.class, args);
     }
 
@@ -223,76 +230,14 @@ public class DhDemoServer implements QuarkusApplication {
                 if (cookieDomain == null) {
                     cookieDomain = DOMAIN + "; secure";
                 }
+                final String html = String.join(uri, demoHtml);
                 req.response()
                         .putHeader("content-type", "text/html")
                         .putHeader("x-frame-options", "DENY")
                         .putHeader("Set-Cookie", COOKIE_NAME + "=" + machine.getDomainName().split("[.]")[0] + "; Max-Age=2400; domain=" + cookieDomain + "; HttpOnly")
                         .setChunked(true)
                         .setStatusCode(200)
-                        // ...gross, move this to a resource file and just text replace the uri into place (store text pre-split to save IO/time)...
-                        .end("<!DOCTYPE html><html><head>\n" +
-                                "<style>" +
-                                    "body {" +
-                                        "background: #1a171a; " +
-                                        "display: flex; " +
-                                        "justify-content: center; " +
-                                        "align-items: center; " +
-                                        "height: 100vh; " +
-                                        "margin 0; " +
-                                        "flex-direction: column; " +
-                                    " }\n" +
-                                    "#box {\n" +
-                                    "    margin: auto; " +
-                                    "    padding: 2em; " +
-                                    "    background: #fcfcfa; " +
-                                    "    color: #1a171a; " +
-                                    "    text-align: center; " +
-                                    "    max-width: 50em; " +
-                                    "    border: 0 solid rgba(26, 23, 26, 0.2); " +
-                                    "    border-radius: 0.3rem; " +
-                                    "    outline: 0; " +
-                                    "    font-family: \"Fira Sans\", -apple-system, blinkmacsystemfont, \"Segoe UI\", \"Roboto\", \"Helvetica Neue\", arial, sans-serif; " +
-                                    "}\n" +
-                                    "\n" +
-                                    "#box > a { " +
-                                    "    color: #8b8b90; " +
-                                    "    text-decoration: none; " +
-                                    "    transition: color 200ms cubic-bezier(0.08,0.52,0.52,1); " +
-                                    "}" +
-                                "</style>\n" +
-                                "</head><body>\n" +
-                                "<div id=box>Preparing machine <a href=\"" + uri + "\">" + uri + "</a>.</div>\n" +
-                                "<script>" +
-                                    // create a small script that will ping the /health uri until it's happy, then update our message and try to navigate to running machine
-                                    "var pid\n" +
-                                    "var wait = 800\n" +
-                                    "var request = new XMLHttpRequest();\n" +
-                                    "request.onreadystatechange = function() {\n" +
-                                    "    if (request.readyState === 4){\n" +
-                                    "        if (request.status >= 200 && request.status < 400) {\n" +
-                                    "            // we win! ...but wait 2s, to give grpc-api time to come online (or make /health smarter)\n" +
-                                    "            setTimeout(goToWorker, 2000);\n" +
-                                    "        } else {\n" +
-                                    "            pid && clearTimeout(pid);\n" +
-                                    "            pid = setTimeout(getStatus, 400);\n" +
-                                    "        }\n" +
-                                    "    }\n" +
-                                    "};\n" +
-                                    "request.onerror = function() {\n" +
-                                    "    pid && clearTimeout(pid);\n" +
-                                    "    pid = setTimeout(getStatus, (wait+=10));\n" +
-                                    "};\n" +
-                                    "function getStatus() {\n" +
-                                    "    request.open(\"GET\", '" + uri + "/health' , true);\n" +
-                                    "    request.send(null);\n" +
-                                    "}\n" +
-                                    "function goToWorker() {\n" +
-                                    "    document.getElementById('box').innerHTML = 'Your machine, <a href=\"" + uri + "\">" + uri + "</a>, is ready!';\n" +
-                                    "    window.location.href=\"" + uri + "\";\n" +
-                                    "}\n" +
-                                    "getStatus();\n" +
-                                "</script>" +
-                                "</body></html>");
+                        .end(html);
             }
 //        });
     }

@@ -723,7 +723,7 @@ public class GoogleDeploymentManager implements DeploymentManager {
         // Turn off a given node
         Execute.ExecutionResult res = execute(
                 "gcloud", "compute", "instances", "stop", node.getHost(),
-                "--zone", getGoogleZone());
+                "--zone", getGoogleZone(), "--project", getGoogleProject());
         if (res.code != 0) {
             throw new IllegalStateException("Failed to turn off node " + node.getHost() + "\n" + res.err);
         }

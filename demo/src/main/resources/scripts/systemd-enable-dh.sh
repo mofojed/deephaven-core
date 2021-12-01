@@ -19,7 +19,7 @@ WorkingDirectory=$DH_DIR
 # Shutdown container (if running) when unit is started
 ExecStartPre=$docker_compose -f docker-compose.yml down
 # Start container when unit is started
-ExecStart=$docker_compose -f docker-compose.yml up
+ExecStart=$docker_compose -f docker-compose.yml up --force-recreate
 # Stop container when unit is stopped
 ExecStop=$docker_compose -f docker-compose.yml down
 [Install]

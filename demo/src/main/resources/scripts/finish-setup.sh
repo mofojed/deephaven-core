@@ -3,10 +3,28 @@ PORT="${PORT:-10000}"
 # setup iptables to redirect 443 and 80 to envoy
 if ! systemctl is-enabled netfilter-persistent; then
     # netfilter-persistent needs to be installed first for it to work
-    sudo apt-get -yq install netfilter-persistent
+    tries=10
+    while ! sudo apt-get -yq install netfilter-persistent; do
+        tries=$((tries - 1))
+        if (( tries == 0 )); then
+            log "Unable to install netfilter-persistent after 10 tries"
+        else
+            log "Failed to install netfilter-persistent, sleeping"
+            sleep $(( 15 - tries ))
+        fi
+    done
 fi
 if ! systemctl is-enabled iptables-persistent; then
-    sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install iptables-persistent
+    tries=10
+    while ! sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install iptables-persistent; do
+        tries=$((tries - 1))
+        if (( tries == 0 )); then
+            log "Unable to install iptables-persistent after 10 tries"
+        else
+            log "Failed to install iptables-persistent, sleeping"
+            sleep $(( 15 - tries ))
+        fi
+    done
 fi
 
 sudo iptables -t nat -L | grep -q "${PORT}" || {

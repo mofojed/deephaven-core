@@ -8,7 +8,7 @@ from typing import List
 
 import jpy
 
-from deephaven2 import DHError
+from deephaven2 import DHError, dtypes
 from deephaven2.column import Column
 from deephaven2.agg import Aggregation
 from deephaven2.constants import SortDirection
@@ -18,8 +18,7 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
-_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
+
 
 #
 # module level functions
@@ -565,12 +564,14 @@ class Table:
         """
 
         def sort_column(col, dir_):
-            return _JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(_JColumnName.of(col))
+            return _JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(
+                _JColumnName.of(col))
 
         try:
             if order:
                 sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-                return Table(j_table=_JTWD.sort(self.j_table, *sort_columns))
+                j_sc_list = dtypes.j_array_list(sort_columns)
+                return Table(j_table=self.j_table.sort(j_sc_list))
             else:
                 return Table(j_table=self.j_table.sort(*order_by))
         except Exception as e:
@@ -635,33 +636,6 @@ class Table:
                 return Table(j_table=self.j_table.exactJoin(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
-
-    def left_join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
-        """ The left_join method creates a new table containing all of the rows and columns of the left table,
-        plus additional columns containing data from the right table. For columns appended to the left table (joins),
-        row values are arrays of row values from the right table, where the key values in the left and right tables
-        are equal. If there is no matching key in the right table, appended row values are NULL.
-
-        Args:
-            table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            if joins:
-                return Table(j_table=self.j_table.leftJoin(table.j_table, ",".join(on), ",".join(joins)))
-            else:
-                return Table(j_table=self.j_table.leftJoin(table.j_table, ",".join(on)))
-        except Exception as e:
-            raise DHError(e, "table left_join operation failed.") from e
 
     def join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
         """ The join method creates a new table containing rows that have matching values in both tables. Rows that
@@ -1046,7 +1020,8 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=_JTWD.aggBy(self.j_table, _JAggHolder(*[agg.j_agg for agg in aggs]), *by))
+            j_agg_list = dtypes.j_array_list([agg.j_agg for agg in aggs])
+            return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
     # endregion

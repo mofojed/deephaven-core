@@ -172,6 +172,9 @@ String webTag = project.version
 String envoyRepository = project.property('envoyRepository')
 String envoyTag = project.version
 
+String certsRepository = project.property('certsRepository')
+String certsTag = project.version
+
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
@@ -203,8 +206,18 @@ def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
         t.dependsOn demoEnvoy.tasks.findByName('buildImage')
 }
 
+def tagCerts = tasks.register('tagCerts', DockerTagImage) {
+    DockerTagImage t ->
+        def demoCerts = project(':demo-certs')
+        t.imageId.set demoCerts.property('image') as String
+        t.repository.set certsRepository
+        t.tag.set certsTag
+        t.force.set true
+        t.dependsOn demoCerts.tasks.findByName('buildImage')
+}
+
 def tagAll = tasks.register('tagAll') {
-    it.dependsOn tagGrpcApiTask, tagWebTask, tagEnvoy
+    it.dependsOn tagGrpcApiTask, tagWebTask, tagEnvoy, tagCerts
 }
 
 def untagGrpcApi = tasks.register('untagGrpcApi', DockerRemoveImage) {
@@ -231,13 +244,26 @@ def untagEnvoy = tasks.register('untagEnvoy', DockerRemoveImage) {
     }
 }
 
+def untagCerts = tasks.register('untagCerts', DockerRemoveImage) {
+    it.imageId.set "${certsRepository}:${certsTag}"
+    it.onError { exception ->
+        if (!exception.message.contains('No such image'))
+            throw exception
+    }
+}
+
 tasks.register('cleanDocker') {
-    it.dependsOn untagGrpcApi, untagWeb, untagEnvoy
+    it.dependsOn untagGrpcApi, untagWeb, untagEnvoy, untagCerts
 }
 
 tasks.register('pushAll', DockerPushImage) {
     DockerPushImage p ->
-        p.images.set([ "${grpcApiRepository}:${grpcApiTag}", "${webRepository}:${webTag}", "${envoyRepository}:${envoyTag}" ] as Set)
+        p.images.set([
+                "${grpcApiRepository}:${grpcApiTag}",
+                "${webRepository}:${webTag}",
+                "${envoyRepository}:${envoyTag}",
+                "${certsRepository}:${certsTag}",
+        ] as Set)
         p.dependsOn tagAll
 }
 

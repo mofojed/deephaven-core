@@ -84,7 +84,7 @@ CLUSTER_NAME=dhce-auto
 ZONE=us-central1
 K8S_CONTEXT=gke_"$PROJECT_ID"_"$ZONE"_"$CLUSTER_NAME"
 K8S_NAMESPACE=dh
-DOCKER_VERSION=0.5.0
+DOCKER_VERSION=0.7.0
 
 https://console.cloud.google.com/artifacts/create-repo?project=deephaven-oss
 
@@ -110,6 +110,8 @@ docker tag deephaven/web:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deepha
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-proxy:$DOCKER_VERSION &
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/grpc-api:$DOCKER_VERSION &
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/web:$DOCKER_VERSION &
+
+docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/cert-wildcard-job:$DOCKER_VERSION &
 
 docker tag deephaven/envoy:local-build ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/envoy:$DOCKER_VERSION
 docker push ${ZONE}-docker.pkg.dev/${PROJECT_ID}/deephaven/envoy:$DOCKER_VERSION
@@ -464,6 +466,14 @@ On a trusted machine, get your svc account json, run script, get certs, sed patc
 
 kubectl patch secret dh-wildcard-cert --type='strategic' --patch "$(cat secret-patch.json)"
 
+docker build -t cert-wildcard-job .
+docker run -d cert-wildcard-job
+
+# debug script
+docker run --entrypoint /bin/sh -it --rm cert-wildcard-job
+
+docker ps 
+# find container id
 
 
 deephaven.app setup:

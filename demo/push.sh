@@ -10,7 +10,7 @@ while [ -n "$dir" ]; do
     docker rmi us-central1-docker.pkg.dev/deephaven-oss/deephaven/grpc-api:0.7.0 &>/dev/null
     docker rmi us-central1-docker.pkg.dev/deephaven-oss/deephaven/web:0.7.0 &>/dev/null
 
-    export WEB_VERSION=${WEB_VERSION:-0.6.1-markdownnotebooks.5}
+    export WEB_VERSION=${WEB_VERSION:-0.6.1-markdownnotebooks.6}
     "$dir/gradlew" quarkusBuild pushAll \
         -i \
         -PdockerPath=deephaven-oss/deephaven \
@@ -23,4 +23,3 @@ while [ -n "$dir" ]; do
   fi
   dir="$(dirname "$dir")"
 done
-

@@ -212,7 +212,7 @@ public class ClusterController {
                 if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
                     LOG.infof("Machine %s has past its expiry by %sms, shutting it down", machine, System.currentTimeMillis() - machine.getExpiry());
                     // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
-                    turnOff(machine);
+                    turnOff(machine, true);
                     offlineMachines.add(machine);
                 } else {
                     runningMachines.add(machine);
@@ -322,7 +322,7 @@ public class ClusterController {
                     numRunning--;
                     numShut++;
                     availableMachines.remove(next);
-                    turnOff(next);
+                    turnOff(next, false);
                     if (numRunning <= poolSize) {
                         break;
                     }
@@ -334,7 +334,7 @@ public class ClusterController {
                     numRunning--;
                     numShut++;
                     availableMachines.remove(next);
-                    turnOff(next);
+                    turnOff(next, false);
                     if (numRunning <= poolSize) {
                         break;
                     }
@@ -355,7 +355,7 @@ public class ClusterController {
                             available.toStringShort(), TimeUnit.MILLISECONDS.toMinutes(aliveFor));
                     // this machine has been online for 3 hours after it was last used, or 3 hour + sessionTTL w/o being used.
                     // turn this machine off...
-                    turnOff(available);
+                    turnOff(available, true);
                     // and request a new machine
                     if (shouldReserveReplacementMachine()) {
                         requestMachine(false);
@@ -395,7 +395,7 @@ public class ClusterController {
                 }
                 if (mach != null && !mach.isOnline()) {
                     LOG.infof("Deleting unneeded offline machine %s", mach.toStringShort());
-                    turnOff(mach);
+                    turnOff(mach, false);
                 }
             }
         } else {
@@ -404,7 +404,7 @@ public class ClusterController {
         }
     }
 
-    private void turnOff(final Machine machine) {
+    private void turnOff(final Machine machine, boolean revive) {
         machine.setOnline(false);
         boolean validVersion = isValidVersion(machine);
         if (!validVersion) {
@@ -422,7 +422,7 @@ public class ClusterController {
                 if (validVersion) {
 
                     machine.setOnline(false);
-                    boolean keep = machines.getNumberOfflineMachines() <= getMaxOfflineSize() && machine.getLastOnline() > (System.currentTimeMillis() - getDeletionTtl());
+                    boolean keep = revive && machines.getNumberOfflineMachines() <= getMaxOfflineSize() && machine.getLastOnline() > (System.currentTimeMillis() - getDeletionTtl());
                     if (keep) {
                         if (leader.get()) {
                             machines.clearExpiry(machine);
@@ -683,7 +683,7 @@ public class ClusterController {
             // never turn off unexpired machines.
             if (mach.getExpiry() <= System.currentTimeMillis()) {
                 LOG.infof("Turning off invalid-version offline machine %s", mach);
-                turnOff(mach);
+                turnOff(mach, false);
             }
             machines.removeMachine(mach);
         }

@@ -1,0 +1,25 @@
+{
+  "name": "@deephaven/jsapi",
+  "version": "0.1.0",
+  "description": "Deephaven JSAPI Module",
+  "author": "Deephaven Data Labs LLC",
+  "private": true,
+  "license": "Deephaven",
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deephaven/deephaven-core"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "webpack",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1"
+  },
+  "files": [
+    "dist"
+  ]
+}

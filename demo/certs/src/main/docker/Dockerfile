@@ -1,14 +1,26 @@
-FROM certbot/dns-google:v1.21.0
+FROM certbot/dns-google:v1.22.0
 
-COPY ./rx /rx
+# install curl and bash, update pip's google api dependencies
+RUN apk --no-cache add curl bash && \
+    python -m pip install --upgrade pip && \
+    pip install --upgrade google-api-python-client>=2.33.0 google-api-core>=2.3.2
 
+# Install gcloud so we can auth with our service account
+RUN curl -sSL https://sdk.cloud.google.com | bash
+ENV PATH $PATH:/root/google-cloud-sdk/bin
+ENV CLOUDSDK_CONFIG=/root/.config
+RUN echo " \
+CLOUDSDK_CONFIG=/root/.config/gcloud \
+" > /etc/environment ;
+
+# Set variable used by docker-entrypoint.sh
 ENV SECRET=deephaven-app-cert
 ENV EMAIL=operations@deephaven.io
 ENV DOMAIN=demo.deephaven.app
+ENV DEBUG=false
 
-RUN chmod -R +x /rx && \
-    apk --no-cache add curl && \
-    python -m pip install --upgrade pip && \
-    pip install --upgrade google-api-python-client>=1.6
+# Copy our scripts and make them executable
+COPY ./rx /rx
+RUN chmod -R +x /rx
 
 ENTRYPOINT ["/rx/docker-entrypoint.sh"]

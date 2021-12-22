@@ -84,7 +84,7 @@ CLUSTER_NAME=dhce-auto
 ZONE=us-central1
 K8S_CONTEXT=gke_"$PROJECT_ID"_"$ZONE"_"$CLUSTER_NAME"
 K8S_NAMESPACE=dh
-DOCKER_VERSION=0.7.02
+DOCKER_VERSION=0.7.04
 
 https://console.cloud.google.com/artifacts/create-repo?project=deephaven-oss
 

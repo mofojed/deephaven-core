@@ -9,7 +9,7 @@ We hope you find that to be sufficient time to take a tour and experiment a bit.
 \
 \
 \
-The IDE provides a REPL experience for exploring data, one that uniquely supports interactive interrogatino of real-time data (as well as batch).
+The IDE provides a REPL experience for exploring data, one that uniquely supports interactive interrogation of real-time data (as well as batch).
 People often use it for building server-side data-driven applications.
 \
 \

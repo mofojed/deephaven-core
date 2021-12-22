@@ -358,7 +358,7 @@ public class ClusterController {
                     turnOff(available, true);
                     // and request a new machine
                     if (shouldReserveReplacementMachine()) {
-                        requestMachine(false);
+                        requestMachine(false, false);
                     }
                 }
             }
@@ -465,7 +465,7 @@ public class ClusterController {
                     machine.setInUse(true);
                 }
                 if (shouldReserveReplacementMachine()) {
-                    final Machine newMach = requestMachine(false);
+                    final Machine newMach = requestMachine(false, false);
                     LOG.infof("We shut down %s and the pool was empty enough, so we started new machine %s",
                             machine.toStringShort(), newMach.toStringShort());
                 }
@@ -712,6 +712,11 @@ public class ClusterController {
                    fixLease(mach);
             }
             machines.expireInTimeString(mach, bits[getIndexLease()]);
+        } else {
+            // this machine does not have a lease, make sure it is marked as not-in-use!
+            // this is an unfortunate side effect of the way we scale up machines;
+            // we'll mark them in-use in-memory, so we but don't tag the instances
+            mach.setInUse(false);
         }
         return mach;
     }
@@ -894,16 +899,21 @@ public class ClusterController {
         return requestMachine(true);
     }
     public Machine requestMachine(boolean reserve) {
+        return requestMachine(reserve, true);
+    }
+    public Machine requestMachine(boolean reserve, boolean useExisting) {
         waitUntilReady();
-        Optional<Machine> machine = machines.maybeGetMachine(reserve);
-        if (machine.isPresent()) {
-            final Machine mach = machine.get();
-            moveToRunningState(mach, reserve);
-            LOG.info("Sending user to pre-existing machine " + mach);
-            return mach;
+        if (useExisting) {
+            Optional<Machine> machine = machines.maybeGetMachine(reserve);
+            if (machine.isPresent()) {
+                final Machine mach = machine.get();
+                moveToRunningState(mach, reserve);
+                LOG.info("Sending user to pre-existing machine " + mach);
+                return mach;
+            }
+            // hm... we should probably send user to interstitial page immediately...
+            // no need to have them wait until machine spins up to see "you gonna have to wait" screen.
         }
-        // hm... we should probably send user to interstitial page immediately...
-        // no need to have them wait until machine spins up to see "you gonna have to wait" screen.
         String newName = NameGen.newName();
         LOG.info("Sending user to new machine " + newName);
         return requestMachine(NameGen.newName(), reserve);

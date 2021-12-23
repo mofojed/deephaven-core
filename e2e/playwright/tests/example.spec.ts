@@ -25,7 +25,7 @@ test("basic test", async ({ page }) => {
 
   expect(
     await page.locator(".iris-grid-panel canvas").screenshot()
-  ).toMatchSnapshot("iris-grid-source.png");
+  ).toMatchSnapshot("iris-grid-source.png", { threshold: 0.8 });
 
   // Make sure the title is correct
   await expect(
@@ -52,5 +52,5 @@ test("basic test", async ({ page }) => {
 
   expect(
     await page.locator(".iris-chart-panel .cartesianlayer").screenshot()
-  ).toMatchSnapshot("iris-chart-plot_single.png");
+  ).toMatchSnapshot("iris-chart-plot_single.png", { threshold: 0.6 });
 });

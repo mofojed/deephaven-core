@@ -1,0 +1,14 @@
+{
+  "name": "@deephaven/core-e2e-test",
+  "version": "0.1.0",
+  "description": "End to end tests for Deephaven",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "author": "Deephaven Data Labs LLC",
+  "devDependencies": {
+    "@playwright/test": "^1.17.1"
+  },
+  "private": true
+}

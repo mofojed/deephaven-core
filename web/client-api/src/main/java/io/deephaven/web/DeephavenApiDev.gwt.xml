@@ -5,9 +5,6 @@
 
   <set-property name="dh.dev" value="true" />
 
-  <set-configuration-property name="includeSourceMapUrl"
-          value="localhost:8123/dhapi/extra/dhapi/src/__HASH___sourceMap__FRAGMENT__.json"/>
   <!-- We aren't using default xsi linker, so we have to put dev mode stuff back -->
-  <set-property name="compiler.useSourceMaps" value="true"/>
   <set-configuration-property name="devModeRedirectEnabled" value="true"/>
 </module>

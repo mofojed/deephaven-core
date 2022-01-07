@@ -50,11 +50,11 @@ class GwtTools {
             compile.with {
                 style = 'OBF'
                 generateJsInteropExports = true
+                extra = extras
                 // TODO move this down a line when we want to give clients js that is not super strict / rigged to blow
                 checkAssertions = true
                 if (gwtDev) {
                     saveSource = true
-                    extra = extras
                     logLevel = 'INFO'
                     draftCompile = true
                 }

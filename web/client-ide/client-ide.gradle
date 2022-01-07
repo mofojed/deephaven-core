@@ -24,9 +24,18 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
     includeEmptyDirs = false
     from(tasks.getByName('gwtCompile').outputs.files) {
         // only copy the dhapi module, and don't give it a wrapper directory
+//        include("extra/dhapi/symbolMaps/*.json").rename('extra/dhapi/symbolMaps/[A-Z0-9]+_sourceMap0\\.json', 'dhapi/dh-core.js.map')
         include 'dhapi/**'
-        eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
+        logger.warn('Hello! Copinyg...');
+        eachFile {
+            logger.warn('Renaming ' + it.path);
+            it.path = 'jsapi/' + it.path.substring('dhapi/'.length())
+        }
     }
+//    from(tasks.getByName('gwtCompile').outputs.files) {
+//        include("dhapi/extra/symbolMaps/*.json").rename('dhapi/extra/symbolMaps/[A-Z0-9]+_sourceMap0\\.json', 'dhapi/dh-core.js.map')
+//        eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
+//    }
     into jsOutput
 }
 

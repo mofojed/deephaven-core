@@ -12,17 +12,8 @@ public class JsVariableChanges {
             TABLEMAP = "TableMap",
             FIGURE = "Figure",
             OTHERWIDGET = "OtherWidget",
-            PANDAS = "Pandas";
-    private static final String[] WidgetTypeLookup = {OTHERWIDGET, TABLE, TREETABLE, TABLEMAP, FIGURE, PANDAS};
-
-    public static String getVariableTypeFromFieldCase(int fieldCase) {
-        if (fieldCase >= 1 && fieldCase <= WidgetTypeLookup.length) {
-            return WidgetTypeLookup[fieldCase - 1];
-        }
-
-        // otherwise, no idea what this is yet
-        return OTHERWIDGET;
-    }
+            PANDAS = "Pandas",
+            PLUGIN = "Plugin";
 
     private final JsVariableDefinition[] created;
     private final JsVariableDefinition[] updated;

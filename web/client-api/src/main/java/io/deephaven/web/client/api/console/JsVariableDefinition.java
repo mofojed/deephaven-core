@@ -15,6 +15,20 @@ public class JsVariableDefinition {
     private final String applicationId;
     private final String applicationName;
 
+    private static final String[] WidgetTypeLookup = {JsVariableChanges.OTHERWIDGET, JsVariableChanges.TABLE, JsVariableChanges.PLUGIN};
+
+    public static String getVariableTypeFromField(FieldInfo field) {
+        int fieldCase = field.getFieldType().getFieldCase();
+        if (fieldCase >= 1 && fieldCase <= WidgetTypeLookup.length) {
+            String widgetType = WidgetTypeLookup[fieldCase - 1];
+            if (widgetType.equals(JsVariableChanges.PLUGIN)) {
+                return field.getFieldType().getPlugin().getName();
+            }
+            return widgetType;
+        }
+        return JsVariableChanges.OTHERWIDGET;
+    }
+
     public JsVariableDefinition(String type, String title, String id, String description) {
         this.type = type;
         this.title = title == null ? JS_UNAVAILABLE : title;
@@ -25,7 +39,7 @@ public class JsVariableDefinition {
     }
 
     public JsVariableDefinition(FieldInfo field) {
-        this.type = JsVariableChanges.getVariableTypeFromFieldCase(field.getFieldType().getFieldCase());
+        this.type = getVariableTypeFromField(field);
         this.id = field.getTicket().getTicket_asB64();
         this.title = field.getFieldName();
         this.description = field.getFieldDescription();

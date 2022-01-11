@@ -2,18 +2,16 @@ FROM deephaven/dhide:local-build as dhide
 
 FROM deephaven/js-out:local-build as js-out
 
+# Switch to root before nginx-unprivileged, switch back to root after
 USER 0
-
 FROM nginxinc/nginx-unprivileged:1.19.7-amd64
-
 USER 0
 
 # these installs are necessary to enable webdav class 2
 # https://github.com/arut/nginx-dav-ext-module
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y nginx-extras libnginx-mod-http-dav-ext --option=Dpkg::Options::=--force-confdef;
-
+    apt-get install -y nginx-extras libnginx-mod-http-dav-ext;
 
 RUN mkdir -p /data/notebooks; \
     chown nginx:nginx /data/notebooks; \

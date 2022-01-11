@@ -1,8 +1,8 @@
 #!/bin/sh
 
-SVC_ACT="${SVC_ACT:-/svc/deephaven-svc-act.json}"
+SVC_ACT_KEY="${SVC_ACT_KEY:-/svc/deephaven-svc-act.json}"
 
-echo "Beginning wildcard cert generation using service account $SVC_ACT"
+echo "Beginning wildcard cert generation using service account $SVC_ACT_KEY"
 
 set -x
 
@@ -52,6 +52,10 @@ if [ -z "$EMAIL" ] || [ -z "$DOMAINS" ] || [ -z "$SECRET" ]; then
 	exit 1
 fi
 
+# We only need service account json keys when the kubernetes service account does not have a proper workload identity setup.
+# You can test the workload identity setup by setting DEBUG=true (in Dockerfile or k8 yaml) and viewing logs.
+[ -f "$SVC_ACT_KEY" ] && MAYBE_SVC_JSON="--dns-google-credentials ${SVC_ACT_KEY}" || MAYBE_SVC_JSON=
+
 cd $HOME
 certbot certonly \
   --email "$EMAIL" \
@@ -61,10 +65,10 @@ certbot certonly \
   --noninteractive \
   --dns-google \
   --dns-google-propagation-seconds 60 \
-  --dns-google-credentials "${SVC_ACT}" \
+  ${MAYBE_SVC_JSON} \
   -d "$DOMAINS"
 # --dns-google-credentials, above, is hacky, but needed:
-# We need a service account json, SVC_ACT, to be able to run locally even though kubernetes should have service account provide access...
+# We need a service account json, SVC_ACT_KEY, to be able to run locally even though kubernetes should have service account provide access...
 # unfortunately, when running in autopilot mode, we can't use hostNetwork, which is where the service account gets its auth
 
 # Find where the cert lives

@@ -56,6 +56,7 @@ public class ClusterController {
     // We are using NY timezone, but want to cover all N.A. business hours, so our end is 9pm NY
     private static LocalTime BIZ_END = LocalTime.of(21, 0);
     private long checkLatency = 1;
+    private volatile boolean shutdown;
 
     public ClusterController() {
         this(new GoogleDeploymentManager("/tmp"));
@@ -90,24 +91,6 @@ public class ClusterController {
         if (loadMachines) {
             // don't load machines or start any other controller threads if we are manually creating machines (ImageDeployer)
             setTimer("Load Machines", this::loadMachinesInitial);
-            setTimer("Wait until loaded", ()->{
-                waitUntilReady();
-                // a little extra delay: give user a chance to request a machine before we possibly clean it up!
-                setTimer("Refresh state", ()-> {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return false;
-                    }
-                    try {
-                        checkState();
-                    } finally {
-                        monitorLoop();
-                    }
-                    return true;
-                });
-            });
         }
     }
 
@@ -561,10 +544,37 @@ public class ClusterController {
     }
 
     private void loadMachinesInitial() {
-        loadMachines();
-        latch.countDown();
+        try {
+            loadMachines();
+            latch.countDown();
+            setTimer("Wait until loaded", ()->{
+                waitUntilReady();
+                // a little extra delay: give user a chance to request a machine before we possibly clean it up!
+                setTimer("Refresh state", ()-> {
+                    try {
+                        Thread.sleep(250);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return false;
+                    }
+                    try {
+                        checkState();
+                    } finally {
+                        monitorLoop();
+                    }
+                    return true;
+                });
+            });
+        } catch (Throwable t) {
+            shutdown = true;
+            System.err.println("Unable to load machines, shutting down controller.");
+            throw t;
+        }
     }
     private void loadMachines() {
+        if (shutdown) {
+            return;
+        }
         String rawOut;
         try {
             LOG.info("Reloading machine metadata from google");
@@ -769,18 +779,27 @@ public class ClusterController {
     private int getIndexLength() { return 9; }
 
     private void loadDomainsInitial() {
-        loadDomains();
-        latch.countDown();
-        ClusterController.setTimer("Cleanup DNS", ()->{
-            waitUntilReady();
-            waitUntilIpsCreated();
-            // now! map all our known domains to known IP addresses, and delete anything left hanging
-            cleanupDNS();
-        });
+        try {
+            loadDomains();
+            latch.countDown();
+            ClusterController.setTimer("Cleanup DNS", ()->{
+                waitUntilReady();
+                waitUntilIpsCreated();
+                // now! map all our known domains to known IP addresses, and delete anything left hanging
+                cleanupDNS();
+            });
+        } catch (Throwable t) {
+            shutdown = true;
+            System.err.println("Unable to load domains, shutting down controller.");
+            throw t;
+        }
     }
 
 
     private void loadDomains() {
+        if (shutdown) {
+            return;
+        }
         try {
             final DomainPool domains = manager.getDomainPool();
             long mark = domains.markAll();
@@ -806,10 +825,19 @@ public class ClusterController {
     }
 
     private void loadIpsUnusedInitial() {
-        loadIpsUnused();
-        latch.countDown();
+        try {
+            loadIpsUnused();
+            latch.countDown();
+        } catch (Throwable t) {
+            shutdown = true;
+            System.err.println("Unable to load unused IPs, shutting down controller.");
+            throw t;
+        }
     }
     private void loadIpsUnused() {
+        if (shutdown) {
+            return;
+        }
         String[] ipBits = null;
         try {
             Execute.ExecutionResult result = gcloudQuiet(true, false, "addresses", "list",
@@ -841,10 +869,19 @@ public class ClusterController {
     }
 
     private void loadIpsUsedInitial() {
-        loadIpsUsed();
-        latch.countDown();
+        try {
+            loadIpsUsed();
+            latch.countDown();
+        } catch (Throwable t) {
+            shutdown = true;
+            System.err.println("Unable to load used IPs, shutting down controller.");
+            throw t;
+        }
     }
     private void loadIpsUsed() {
+        if (shutdown) {
+            return;
+        }
         String[] ipBits = null;
         try {
             Execute.ExecutionResult result = gcloudQuiet(true, false, "addresses", "list",

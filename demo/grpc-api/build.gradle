@@ -5,7 +5,7 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-evaluationDependsOn ':grpc-api-server-docker'
+evaluationDependsOn ':docker-server'
 
 dependencies {
     // To be provided by the DH environment
@@ -33,7 +33,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 }
 
 def buildImage = project.tasks.register('buildImage', DockerBuildImage) {
-    def grpcApiImage = project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage')
+    def grpcApiImage = project(':docker-server').tasks.findByName('buildDocker-server')
     it.dependsOn prepareDocker, grpcApiImage
     it.inputs.files grpcApiImage.outputs.files
     it.inputDir.set dockerfileDir

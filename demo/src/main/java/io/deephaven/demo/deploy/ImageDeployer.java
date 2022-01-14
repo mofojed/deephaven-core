@@ -155,6 +155,8 @@ public class ImageDeployer {
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");
 
+        LOG.infof("Done deployment! Test https://%s and promote to leader by updating DNS for %s to point to %s",
+                newCtrl.getHost(), newCtrl.domain().getDomainRoot(), newCtrl.getIp().getIp());
     }
 
     private void finishDeploy(final String type, final Machine machine, final DeploymentManager manager) throws IOException, InterruptedException {

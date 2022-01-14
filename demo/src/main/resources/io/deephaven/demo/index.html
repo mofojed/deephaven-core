@@ -174,6 +174,7 @@
     </div>
     <script>
       var uri = "__URI__"; // no trailing slash
+      var path = "__PATH__"; // /whatever/user/?requested=we&keep=here
       var name = uri.split(".")[0].split("//")[1]; // extract machine name from uri
       var pid;
       var wait = 800;
@@ -340,7 +341,7 @@
         request.send(null);
       }
       function goToWorker() {
-        window.location.href = uri;
+        window.location.href = uri + path;
       }
 
       getStatus();

@@ -1,4 +1,4 @@
-FROM deephaven/grpc-api:local-build
+FROM deephaven/server:local-build
 
 # Add the extra libraries to the classpath
 COPY libs/ /app/libs

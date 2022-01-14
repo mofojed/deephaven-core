@@ -230,7 +230,12 @@ public class DhDemoServer implements QuarkusApplication {
                 if (cookieDomain == null) {
                     cookieDomain = DOMAIN + "; secure";
                 }
-                final String html = String.join(uri, demoHtml);
+                String path = req.request().path();
+                String query = req.request().query();
+                if (query != null && query.length() > 0) {
+                    path = path + "?" + query;
+                }
+                final String html = String.join(uri, demoHtml).replace("__PATH__", path);
                 req.response()
                         .putHeader("content-type", "text/html")
                         .putHeader("x-frame-options", "DENY")

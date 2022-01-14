@@ -2,8 +2,8 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.grpc.ManagedChannelBuilder;
-import io.deephaven.grpc_api.healthcheck.HealthCheckModule;
 
 import javax.inject.Named;
 import javax.inject.Singleton;

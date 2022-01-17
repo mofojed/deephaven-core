@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.deephaven.demo.NameConstants.DOMAIN;
@@ -67,17 +68,19 @@ public class MachinePool {
         machinesByName.put(machine.getHost(), machine);
     }
 
-    public Optional<Machine> maybeGetMachine(final boolean reserve) {
+    public Optional<Machine> maybeGetMachine(final boolean reserve, Function<Machine, Boolean> acceptable) {
         List<Machine> candidates = new ArrayList<>();
         synchronized (machines) {
             for (Machine next : machines) {
-                if (!next.isInUse()) {
-                    if (next.isOnline()) {
-                        LOG.info("Sending user already-warm machine " + next);
-                        next.setInUse(true);
-                        return Optional.of(next);
+                if (Boolean.TRUE.equals(acceptable.apply(next))) {
+                    if (!next.isInUse()) {
+                        if (next.isOnline()) {
+                            LOG.info("Sending user already-warm machine " + next);
+                            next.setInUse(true);
+                            return Optional.of(next);
+                        }
+                        candidates.add(next);
                     }
-                    candidates.add(next);
                 }
             }
             while (!candidates.isEmpty()) {

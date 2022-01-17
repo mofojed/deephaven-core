@@ -47,7 +47,7 @@ public class ImageDeployer {
         LOG.infof("Creating new worker %s", workerName);
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + workerName;
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
-        ClusterController ctrl = new ClusterController(manager, false);
+        ClusterController ctrl = new ClusterController(manager, false, true);
         final Machine machine = ctrl.requestMachine(workerName, true, false);
         manager.waitForSsh(machine);
         ctrl.waitUntilHealthy(machine);
@@ -57,54 +57,66 @@ public class ImageDeployer {
     private void deploy(final String version, String machinePrefix) throws IOException, InterruptedException {
         final String localDir = System.getProperty("java.io.tmpdir", "/tmp") + "/dh_deploy_" + version;
         GoogleDeploymentManager manager = new GoogleDeploymentManager(localDir);
-        ClusterController ctrl = new ClusterController(manager, false);
+        ClusterController ctrl = new ClusterController(manager, false, true);
         String prefix = machinePrefix + (machinePrefix.isEmpty() || machinePrefix.endsWith("-") ? "" : "-");
         String workerBox = prefix + "worker-" + VERSION_MANGLE; //ancestor-worker
         String controllerBox = prefix + "controller-" + VERSION_MANGLE; // ancestor=controller
         String baseBox = manager.getBaseImageName();
         manager.setBaseImageName(baseBox);
+        final boolean workerOnly = "true".equals(System.getProperty("workerOnly"));
+        final boolean force = "true".equals(System.getProperty("force"));
 
         Execute.ExecutionResult result;
-        // for now, we are NOT going to allow stomping images.
-        result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
-        if (result.code == 0) {
-            throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
+        if (!force && !workerOnly) {
+            // for now, we are NOT going to allow stomping worker images w/o explicit -Pforce=true
+            result = GoogleDeploymentManager.gcloudQuiet(true, false, "images", "describe", SNAPSHOT_NAME + "-worker");
+            if (result.code == 0) {
+                throw new IllegalStateException("Snapshot " + SNAPSHOT_NAME + "-worker already exists; please bump your version!");
+            }
         }
 
-        result = GoogleDeploymentManager.gcloudQuiet(true, false,
-                "images", "describe", baseBox);
-        if (result.code != 0) {
-            // create a base box for the given version.
-            LOG.infof("No base image for %s, creating new base image");
-            manager.deleteMachine(baseBox);
-            Machine base = ctrl.findMachine(baseBox, true, true);
-            base.getIp().setDomain(new DomainMapping(baseBox, DOMAIN));
-            base.setSnapshotCreate(true);
-            manager.createMachine(base, manager.getIpPool());
-            manager.assignDns(ctrl, Stream.of(base));
-            // even if we're just going to shut the machine down, wait until ssh is responsive
-            manager.waitForSsh(base, -1, TimeUnit.MINUTES.toMillis(15));
-            // wait until we can get a finish-setup.sh "we are done" log messages.
-            ctrl.waitUntilHealthy(base);
-            // deploy the base image.
-            finishDeploy("Base", base, manager);
+        if (!workerOnly) {
+            // workers _can_ create themselves w/o a base image.
+            result = GoogleDeploymentManager.gcloudQuiet(true, false,
+                    "images", "describe", baseBox);
+            if (result.code != 0) {
+                // create a base box for the given version.
+                LOG.infof("No base image for %s, creating new base image");
+                manager.deleteMachine(baseBox);
+                Machine base = ctrl.findMachine(baseBox, true, true);
+                base.getIp().setDomain(new DomainMapping(baseBox, DOMAIN));
+                base.setSnapshotCreate(true);
+                manager.createMachine(base, manager.getIpPool());
+                manager.assignDns(ctrl, Stream.of(base));
+                // even if we're just going to shut the machine down, wait until ssh is responsive
+                manager.waitForSsh(base, -1, TimeUnit.MINUTES.toMillis(15));
+                // wait until we can get a finish-setup.sh "we are done" log messages.
+                ctrl.waitUntilHealthy(base);
+                // deploy the base image.
+                finishDeploy("Base", base, manager);
+            }
         }
 
-        Machine controller = ctrl.findMachine(controllerBox, true, true);
-        LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
-        // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
-        ClusterController.setTimer("Delete " + controllerBox, ()-> {
-            GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q",
-//                    "controller-" + VERSION_MANGLE
-                    controllerBox
-            );
-            controller.getIp().setDomain(new DomainMapping(controllerBox, DOMAIN));
-            // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
-            controller.setController(true);
-            controller.setSnapshotCreate(true);
+        Machine controller;
+        if (workerOnly) {
+            controller = null;
+        } else {
+            controller = ctrl.findMachine(controllerBox, true, true);
+            LOG.info("Deleting old boxes " + workerBox +" and " + controllerBox + " if they exist");
+            // lots of time until we create the controller box, off-thread this one so we can get to the good stuff
+            ClusterController.setTimer("Delete " + controllerBox, ()-> {
+                GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q",
+    //                    "controller-" + VERSION_MANGLE
+                        controllerBox
+                );
+                controller.getIp().setDomain(new DomainMapping(controllerBox, DOMAIN));
+                // The manager itself has code to select our prepare-controller.sh script as machine startup script based on these bools:
+                controller.setController(true);
+                controller.setSnapshotCreate(true);
 
-            return "";
-        });
+                return "";
+            });
+        }
 //        // no need to offthread, the next "expensive" operation we do is to create a clean box.
 //        // if we later create a -base image for both, we would offthread the worker, and do the baseBox in this thread.
         GoogleDeploymentManager.gcloud(true, "instances", "delete", "-q", workerBox);
@@ -126,6 +138,10 @@ public class ImageDeployer {
 
         finishDeploy("Worker", worker, manager);
 
+        if (workerOnly) {
+            LOG.info("Done deploying new worker image only, exiting early.");
+            return;
+        }
         // worker is done, create the controller (we already setup DNS for it above)
         LOG.info("Creating new controller template box");
         manager.createMachine(controller, manager.getIpPool());
@@ -155,8 +171,8 @@ public class ImageDeployer {
         LOG.infof("Destroying VMs %s and %s", worker, controller);
         manager.destroyCluster(Arrays.asList(worker, controller), "");
 
-        LOG.infof("Done deployment! Test https://%s and promote to leader by updating DNS for %s to point to %s",
-                newCtrl.getHost(), newCtrl.domain().getDomainRoot(), newCtrl.getIp().getIp());
+        LOG.infof("Done deployment! Test https://%s.%s and promote to leader by updating DNS for %s to point to %s",
+                newCtrl.getHost(), newCtrl.domain().getDomainRoot(), newCtrl.domain().getDomainRoot(), newCtrl.getIp().getIp());
     }
 
     private void finishDeploy(final String type, final Machine machine, final DeploymentManager manager) throws IOException, InterruptedException {

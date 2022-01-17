@@ -57,14 +57,18 @@ public class ClusterController {
     private static LocalTime BIZ_END = LocalTime.of(21, 0);
     private long checkLatency = 1;
     private volatile boolean shutdown;
+    private final WeakHashMap<Machine, Boolean> hasLogged = new WeakHashMap<>();
 
     public ClusterController() {
         this(new GoogleDeploymentManager("/tmp"));
     }
     public ClusterController(@NotNull final GoogleDeploymentManager manager) {
-        this(manager, true);
+        this(manager, true, true);
     }
-    public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines) {
+    public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadData) {
+        this(manager, loadData, loadData);
+    }
+    public ClusterController(@NotNull final GoogleDeploymentManager manager, boolean loadMachines, boolean loadIpsAndDns) {
         this.manager = manager;
         this.client = new OkHttpClient();
         latch = new CountDownLatch(loadMachines ? 4 : 3);
@@ -76,6 +80,25 @@ public class ClusterController {
 
         resetLeader();
 
+        // Test if we have gcloud login and print useful messages
+        Exception sentinel = new Exception();
+        try {
+            final Execute.ExecutionResult result = Execute.executeQuiet("gcloud", "config", "list", "account", "--format", "value(core.account)");
+            if (result.code == 0) {
+                LOG.infof("Running cluster controller as %s:\nLoading machines? %s\nLoading ipsAndDns? %s)",
+                        result.out.trim(), loadMachines, loadIpsAndDns);
+            } else {
+                throw sentinel;
+            }
+        } catch (Exception e) {
+            String failMsg = "gcloud user not authenticated, disabling metadata reads";
+            if (e == sentinel) {
+                LOG.error(failMsg);
+            } else {
+                LOG.error(failMsg, e);
+            }
+        }
+
         // resolve the leader off-thread, since there's no need to block now
         setTimer("Leader Check", ()-> {
             if (leader.get()) {
@@ -84,10 +107,11 @@ public class ClusterController {
                 LOG.info("We are not the leader.");
             }
         });
-        // always load IPs... we want them in cases when we manually create named machines
-        setTimer("Load Used IPs", this::loadIpsUsedInitial); // load used first, so we can figure out machine IPs
-        setTimer("Load Unused IPs", this::loadIpsUnusedInitial);
-        setTimer("Load Domains", this::loadDomainsInitial);
+        if (loadIpsAndDns) {
+            setTimer("Load Used IPs", this::loadIpsUsedInitial); // load used first, so we can figure out machine IPs
+            setTimer("Load Unused IPs", this::loadIpsUnusedInitial);
+            setTimer("Load Domains", this::loadDomainsInitial);
+        }
         if (loadMachines) {
             // don't load machines or start any other controller threads if we are manually creating machines (ImageDeployer)
             setTimer("Load Machines", this::loadMachinesInitial);
@@ -193,7 +217,9 @@ public class ClusterController {
         machines.getAllMachines().forEach(machine -> {
             if (machine.isOnline()) {
                 if (machine.getExpiry() > 0 && machine.getExpiry() < System.currentTimeMillis()) {
-                    LOG.infof("Machine %s has past its expiry by %sms, shutting it down", machine, System.currentTimeMillis() - machine.getExpiry());
+                    if (isValidVersion(machine)) {
+                        LOG.infof("Machine %s has past its expiry by %sms, shutting it down", machine, System.currentTimeMillis() - machine.getExpiry());
+                    }
                     // machine is past expiry... lets turn this box off, unless it's version is old, in which case, delete it
                     turnOff(machine, true);
                     offlineMachines.add(machine);
@@ -391,7 +417,11 @@ public class ClusterController {
         machine.setOnline(false);
         boolean validVersion = isValidVersion(machine);
         if (!validVersion) {
-            LOG.infof("Machine %s had incorrect version %s", machine, machine.getVersion());
+            synchronized (hasLogged) {
+                if (null == hasLogged.put(machine, true)) {
+                    LOG.infof("Incorrect version %s (!= our version %s) detected for machine %s", machine.getVersion(), VERSION_MANGLE, machine);
+                }
+            }
             // immediately remove this machine from rotation, so we don't consider it beyond the scope of this method.
             machines.removeMachine(machine);
             // declare the machine as in-use, for now, so any methods with a reference to it won't try to use it.
@@ -629,7 +659,9 @@ public class ClusterController {
             machines.getAllMachines().forEach(m -> {
                 if (m.getMark() < mark) {
                     // this machine has disappeared! ...forget about it!
-                    LOG.infof("Machine %s seems to have disappeared!", m.getHost());
+                    if (isValidVersion(m)) {
+                        LOG.infof("Machine %s seems to have disappeared! (perhaps another controller has removed it?)", m.getHost());
+                    }
                     machines.removeMachine(m);
                 }
             });
@@ -692,7 +724,9 @@ public class ClusterController {
         } else if (!mach.isInUse()){
             // never turn off unexpired machines.
             if (mach.getExpiry() <= System.currentTimeMillis()) {
-                LOG.infof("Turning off invalid-version offline machine %s", mach);
+                if (leader.get()) {
+                    LOG.infof("Turning off invalid-version offline machine %s", mach);
+                }
                 turnOff(mach, false);
             }
             machines.removeMachine(mach);
@@ -941,7 +975,7 @@ public class ClusterController {
     public Machine requestMachine(boolean reserve, boolean useExisting) {
         waitUntilReady();
         if (useExisting) {
-            Optional<Machine> machine = machines.maybeGetMachine(reserve);
+            Optional<Machine> machine = machines.maybeGetMachine(reserve, this::isValidVersion);
             if (machine.isPresent()) {
                 final Machine mach = machine.get();
                 moveToRunningState(mach, reserve);

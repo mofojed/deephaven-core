@@ -52,13 +52,16 @@ public class NameConstants {
         System.getProperty("dh-ingress-name", "dh-ingress");
     public static final String DH_POD_KEY = System.getProperty("dh-pod-key", "dh-pod-id");
     public static final String REGION = System.getProperty("dh-region", "us-central1");
-    public static final String VERSION = System.getProperty("dh-version", "0.7.04");
+    public static final String VERSION = System.getProperty("dh-version", "0.8.06");
     public static final String VERSION_MANGLE = VERSION.replaceAll("[.]", "-");
     public static final String SNAPSHOT_NAME = System.getProperty("DH_SNAPSHOT_NAME", "deephaven-app-" + VERSION_MANGLE);
     public static final String DOMAIN;
+    public static final boolean CONTROLLER;
     public static final String COOKIE_NAME = "dh-user";
 
     static {
+        CONTROLLER = "true".equals(System.getenv("IS_CONTROLLER"));
+        System.out.println("CONTROLLER? " + System.getenv("IS_CONTROLLER") + " == true");
         String domain = System.getenv("MY_DNS_NAME");
         String backup = "demo.deephaven.app";
         if (domain == null || domain.isEmpty()) {

@@ -91,7 +91,7 @@ idea {
     }
 }
 
-project.version = '0.8.0'
+project.version = '0.8.06'
 ext.versionSource = versionSource
 ext.globalVersion = project.version
 

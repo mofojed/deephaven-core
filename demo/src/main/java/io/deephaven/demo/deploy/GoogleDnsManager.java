@@ -1,14 +1,13 @@
 package io.deephaven.demo.deploy;
 
+import io.vertx.core.impl.ConcurrentHashSet;
 import org.apache.commons.io.FileUtils;
 import org.jboss.logging.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -77,12 +76,15 @@ public class GoogleDnsManager {
         return new File(workDir.getParentFile(), "dns_" + txCnt.get());
     }
 
+    private Set<String> pendingAdd = new ConcurrentHashSet<>();
+    private Set<String> pendingRemove = new ConcurrentHashSet<>();
     protected DnsChange startTx(final int depth) {
 
         File dnsDir = dnsDir();
         if (depth == 0) {
             synchronized (txDepth) {
-
+                pendingAdd.clear();
+                pendingRemove.clear();
                 // require a clean, existent DNS dir when depth == 0
                 try {
                     forceEmptyDir(dnsDir);
@@ -95,6 +97,10 @@ public class GoogleDnsManager {
             int d = depth;
             @Override
             public void addRecord(final DomainMapping domain, final String ip) throws IOException, InterruptedException {
+                if (!pendingAdd.add(domain.getDomainQualified())) {
+                    LOG.infof("Ignoring already added domain %s", domain.getDomainQualified());
+                    return;
+                }
                 ensureDnsTx(dnsDir, d);
                 d++;
 
@@ -116,8 +122,13 @@ public class GoogleDnsManager {
 
             @Override
             public void removeRecord(final DomainMapping domain, final String oldIp) throws IOException, InterruptedException {
+                if (!pendingRemove.add(domain.getDomainQualified())) {
+                    LOG.infof("Ignoring already removed domain %s", domain.getDomainQualified());
+                    return;
+                }
                 ensureDnsTx(dnsDir, d);
                 d++;
+                // TODO store an in-memory record of already-added options so we don't dup anything and fail the transaction
                 String dom = domain.getDomainQualified();
                 Execute.ExecutionResult result = Execute.executeQuiet(
                         "gcloud", "dns", "record-sets", "list", "--project=" + getGoogleProject(),

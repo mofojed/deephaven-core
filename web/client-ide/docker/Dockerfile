@@ -7,11 +7,14 @@ USER 0
 FROM nginxinc/nginx-unprivileged:1.19.7-amd64
 USER 0
 
+ARG DEBIAN_FRONTEND="noninteractive"
+
 # these installs are necessary to enable webdav class 2
 # https://github.com/arut/nginx-dav-ext-module
 RUN set -eux; \
-    apt-get update; \
-    apt-get install -y nginx-extras libnginx-mod-http-dav-ext;
+    apt-get -qq update; \
+    apt-get install -y nginx-extras libnginx-mod-http-dav-ext; \
+    rm -rf /var/lib/apt/lists/*;
 
 RUN mkdir -p /data/notebooks; \
     chown nginx:nginx /data/notebooks; \

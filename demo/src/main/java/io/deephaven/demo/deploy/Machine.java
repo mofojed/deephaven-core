@@ -219,8 +219,10 @@ public class Machine {
                 dns.tx(t->{
                     while (ip.getDomainsAvailable() < 5) {
                         final DomainMapping domain = domainPool.getOrCreate(NameGen.newName(), domainRoot);
-                        ip.addDomainMapping(domain);
-                        tx.addRecord(domain, ip.getIp());
+                        if (domain != toAdd) {
+                            ip.addDomainMapping(domain);
+                            tx.addRecord(domain, ip.getIp());
+                        }
                     }
                 });
             }

@@ -33,6 +33,7 @@ services:
     environment:
       - JAVA_OPTIONS="-Xmx12g"
       - CLOUDSDK_CONFIG=/root/.config/gcloud
+      - IS_CONTROLLER=true
 
   envoy:
     image: envoyproxy/envoy:v1.18.3
@@ -130,3 +131,10 @@ static_resources:
                       port_value: 7117
 
 EOF
+
+grep -q "restart dh" /etc/crontab || {
+    echo "
+# Restart dh service every night (around 6am UTC)
+42 6	* * *	root	systemctl restart dh
+" >> /etc/crontab
+}

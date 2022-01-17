@@ -113,7 +113,8 @@ public class DhDemoServer implements QuarkusApplication {
 
         Router router = CDI.current().select(Router.class).get();
 //        KubeManager state = new KubeManager();
-        controller = new ClusterController(new GoogleDeploymentManager("/tmp"));
+
+        controller = new ClusterController(new GoogleDeploymentManager("/tmp"), CONTROLLER);
         router.get("/health").handler(rc -> {
             LOG.info("Health check! " + rc.request().uri() + " : " +
                 rc.request().headers().get("User-Agent") + " ( "
@@ -142,7 +143,7 @@ public class DhDemoServer implements QuarkusApplication {
             rc.response()
                     .putHeader("Access-Control-Allow-Origin", "https://" + DOMAIN)
                     .putHeader("Access-Control-Allow-Methods", "GET")
-                    // disallow all robots...
+                    // disallow all robots... TODO: instead, send back a link-unfurling page
                     .end("User-agent: *\n" +
                             "Disallow: /");
         });
@@ -197,7 +198,17 @@ public class DhDemoServer implements QuarkusApplication {
                         String uri = "https://" + uname;
                         // if you re-visit the main url, we'll renew your 45 minute lease then send you back
                         if (controller.renewLease(uname)) {
-                            req.redirect(uri);
+
+                            String path = req.request().path();
+                            if (!path.startsWith("/ide")) {
+                                LOG.infof("Replacing path %s with /ide%s", path, path);
+                                path = "/ide" + path;
+                            }
+                            String query = req.request().query();
+                            if (query != null && query.length() > 0) {
+                                path = path + "?" + query;
+                            }
+                            req.redirect(uri + path);
                             return;
                         }
                     }

@@ -55,7 +55,7 @@ public class GoogleDeploymentManagerTest {
         String workDir = tmp.newFolder("deploy").getAbsolutePath();
         GoogleDeploymentManager deploy = new GoogleDeploymentManager(workDir);
 
-        ClusterController ctrl = new ClusterController(deploy, false);
+        ClusterController ctrl = new ClusterController(deploy, false, true);
 
         Machine.useImages = false;
         // you can change this machine name to whatever machine name you want

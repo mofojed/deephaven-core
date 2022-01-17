@@ -20,6 +20,7 @@ services:
       - JAVA_TOOL_OPTIONS=-Xmx15g -Ddeephaven.application.dir=/app.d -Ddeephaven.console.type=${TYPE:-python}
       - DH_TLS_CHAIN=/etc/ssl/internal/tls.crt
       - DH_TLS_KEY=/etc/ssl/internal/tls.key.pk8
+      - IS_CONTROLLER=false
 
   demo-server:
     image: ${REPO:-ghcr.io/deephaven}/demo-server:${VERSION:-latest}

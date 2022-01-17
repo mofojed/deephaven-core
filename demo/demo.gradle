@@ -27,7 +27,12 @@ java {
 
 application {
     mainClassName = 'io.deephaven.demo.DhDemoServer'
+}
 
+run {
+    environment("IS_CONTROLLER", System.getenv("IS_CONTROLLER") ?: "true")
+    environment("COOKIE_DOMAIN", "localhost")
+    environment("ALLOW_ADDRESS_LOOKUP", "false")
 }
 
 // we use withType(JavaExec) to catch intellij-created run configurations
@@ -40,9 +45,7 @@ tasks.withType(JavaExec).configureEach {
         exe.systemProperty("dh-helm-root", new File(projectDir, "helm").absolutePath)
         exe.systemProperty("dh-helm-mode", "generate")
         exe.systemProperty("dh-helm-target", new File(buildDir, "helm").absolutePath)
-        exe.doFirst {
-            exe.args("generate")
-        }
+        exe.environment("IS_CONTROLLER", System.getenv("IS_CONTROLLER") ?: "true")
 }
 
 
@@ -274,6 +277,8 @@ tasks.register('deployDemo', JavaExec) {
         exe.classpath(sourceSets.main.runtimeClasspath)
         exe.systemProperty('deployImage', 'true')
         exe.systemProperty('dh-version', version)
+        exe.systemProperty('workerOnly', "true" == findProperty('workerOnly') || "1" == findProperty("wO"))
+        exe.systemProperty('force', "true" == findProperty('force'))
 }
 
 tasks.register('deployMachine', JavaExec) {

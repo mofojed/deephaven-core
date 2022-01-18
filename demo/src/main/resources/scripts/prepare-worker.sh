@@ -12,7 +12,8 @@ services:
     expose:
       - '8888'
     volumes:
-      - ./data:/data
+      - ./demo/web/src/main/layouts:/data/layouts
+      - ./demo/web/src/main/notebooks:/data/notebooks
       - api-cache:/cache
       - /etc/ssl/dh:/etc/ssl/dh
       - /etc/ssl/internal:/etc/ssl/internal
@@ -39,7 +40,8 @@ services:
     expose:
       - '8080'
     volumes:
-      - ./data:/data
+      - ./demo/web/src/main/layouts:/data/layouts
+      - ./demo/web/src/main/notebooks:/data/notebooks
       - /etc/ssl/dh:/etc/ssl/dh
       - web-tmp:/tmp
 

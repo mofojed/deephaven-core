@@ -182,7 +182,7 @@ String certsTag = project.version
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
         def demoGrpcApi = project(':docker-server')
-        t.imageId.set 'deephaven/demo-grpc-api:local-build'
+        t.imageId.set 'deephaven/server:local-build'
         t.repository.set grpcApiRepository
         t.tag.set grpcApiTag
         t.force.set true
@@ -202,11 +202,11 @@ def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
 def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
     DockerTagImage t ->
         def demoEnvoy = project(':envoy')
-        t.imageId.set 'deephaven/demo-envoy:local-build'
+        t.imageId.set 'deephaven/envoy:local-build'
         t.repository.set envoyRepository
         t.tag.set envoyTag
         t.force.set true
-        t.dependsOn demoEnvoy.tasks.findByName('buildImage')
+        t.dependsOn demoEnvoy.tasks.findByName('buildDocker')
 }
 
 def tagCerts = tasks.register('tagCerts', DockerTagImage) {

@@ -38,7 +38,7 @@ COPY configure/image-bootstrap.properties image-bootstrap.properties
 
 FROM $BASE
 COPY --from=install / /
-# VOLUME /data
+VOLUME /data
 VOLUME /cache
 HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1
 ENTRYPOINT [ "/opt/deephaven/server/bin/start", "image-bootstrap.properties" ]

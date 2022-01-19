@@ -23,7 +23,7 @@ services:
     # Note: using old-style volume mounts, so that the directories get created if they don't exist
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
     volumes:
-#      - ./data:/data
+      - ./data:/data
       #- /etc/ssl/internal:/etc/ssl/internal
       #- /etc/ssl/dh:/etc/ssl/dh
 
@@ -49,9 +49,8 @@ services:
     image: deephaven/demo-web:local-build
     expose:
       - "8080"
-#    Demo creates and populates the data directory
-#    volumes:
-#      - ./data:/data
+    volumes:
+      - ./data:/data
     deploy:
       resources:
         limits:

@@ -39,7 +39,6 @@ services:
     expose:
       - '8080'
     volumes:
-      - ./data:/data
       - /etc/ssl/dh:/etc/ssl/dh
       - web-tmp:/tmp
 

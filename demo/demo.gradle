@@ -15,7 +15,7 @@ if (canQuarkus) {
     plugins.apply 'io.quarkus'
 }
 
-evaluationDependsOn ':demo-grpc-api'
+evaluationDependsOn ':docker-server'
 evaluationDependsOn ':demo-web'
 evaluationDependsOn ':envoy'
 
@@ -181,12 +181,12 @@ String certsTag = project.version
 
 def tagGrpcApiTask = tasks.register('tagGrpcApi', DockerTagImage) {
     DockerTagImage t ->
-        def demoGrpcApi = project(':demo-grpc-api')
-        t.imageId.set demoGrpcApi.property('image') as String
+        def demoGrpcApi = project(':docker-server')
+        t.imageId.set 'deephaven/demo-grpc-api:local-build'
         t.repository.set grpcApiRepository
         t.tag.set grpcApiTag
         t.force.set true
-        t.dependsOn demoGrpcApi.tasks.findByName('buildImage')
+        t.dependsOn demoGrpcApi.tasks.findByName('buildDocker-server')
 }
 
 def tagWebTask = tasks.register('tagWeb', DockerTagImage) {

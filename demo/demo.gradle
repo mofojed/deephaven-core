@@ -17,7 +17,7 @@ if (canQuarkus) {
 
 evaluationDependsOn ':demo-grpc-api'
 evaluationDependsOn ':demo-web'
-evaluationDependsOn ':demo-envoy'
+evaluationDependsOn ':envoy'
 
 java {
     toolchain {
@@ -201,8 +201,8 @@ def tagWebTask = tasks.register('tagWeb', DockerTagImage) {
 
 def tagEnvoy = tasks.register('tagEnvoy', DockerTagImage) {
     DockerTagImage t ->
-        def demoEnvoy = project(':demo-envoy')
-        t.imageId.set demoEnvoy.property('image') as String
+        def demoEnvoy = project(':envoy')
+        t.imageId.set 'deephaven/demo-envoy:local-build'
         t.repository.set envoyRepository
         t.tag.set envoyTag
         t.force.set true

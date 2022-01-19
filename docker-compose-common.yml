@@ -23,8 +23,7 @@ services:
     # Note: using old-style volume mounts, so that the directories get created if they don't exist
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
     volumes:
-      - ./demo/web/src/main/layouts:/data/layouts
-      - ./demo/web/src/main/notebooks:/data/notebooks
+#      - ./data:/data
       #- /etc/ssl/internal:/etc/ssl/internal
       #- /etc/ssl/dh:/etc/ssl/dh
 
@@ -51,9 +50,8 @@ services:
     expose:
       - "8080"
 #    Demo creates and populates the data directory
-    volumes:
-      - ./demo/web/src/main/layouts:/data/layouts
-      - ./demo/web/src/main/notebooks:/data/notebooks
+#    volumes:
+#      - ./data:/data
     deploy:
       resources:
         limits:

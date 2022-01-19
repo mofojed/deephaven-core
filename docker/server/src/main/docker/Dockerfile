@@ -28,10 +28,9 @@ RUN set -eux; \
     python3 -m pip install -q --no-index --no-cache-dir /deephaven2-wheel/*.whl; \
     rm -r /deephaven2-wheel
 
-# RUN set -eux; \
-#    python3 -m pip install -q --no-cache-dir \
-#    importlib-metadata \
-#    https://github.com/deephaven/deephaven-plugin-matplotlib/releases/download/v0.0.1.dev1/deephaven_plugin_matplotlib-0.0.1.dev1-py3-none-any.whl
+# To test out the deephaven-plugin-matplotlib, uncomment the following:
+RUN set -eux; \
+   python3 -m pip install --no-cache-dir deephaven-plugin-matplotlib
 
 ARG DEEPHAVEN_VERSION
 ADD serverApplicationDist/server-${DEEPHAVEN_VERSION}.tar /opt/deephaven

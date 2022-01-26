@@ -1,3 +1,5 @@
+# TODO: Add npm pack for plugins?? Then install plugins from here?
+
 FROM deephaven/nginx-base:local-build
 
 COPY licenses/ /

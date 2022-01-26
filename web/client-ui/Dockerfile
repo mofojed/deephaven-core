@@ -1,3 +1,5 @@
+# TODO: Or add npm plugins from here?
+
 FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 

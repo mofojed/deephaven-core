@@ -98,6 +98,7 @@ public class GenerateFigureImmutable {
                 f.getReturnType(),
                 f.getParameterTypes(),
                 f.getParameterNames(),
+                f.getParameterAnnotations(),
                 f.isVarArgs());
     }
 

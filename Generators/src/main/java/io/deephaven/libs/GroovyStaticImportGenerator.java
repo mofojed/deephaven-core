@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -35,11 +36,12 @@ public class GroovyStaticImportGenerator {
         private final Type returnType;
         private final Type[] parameterTypes;
         private final String[] parameterNames;
+        private final Annotation[][] parameterAnnotations;
         private final boolean isVarArgs;
 
         public JavaFunction(final String className, final String classNameShort, final String methodName,
                 final TypeVariable<Method>[] typeParameters, final Type returnType, final Type[] parameterTypes,
-                final String[] parameterNames, final boolean isVarArgs) {
+                final String[] parameterNames, final Annotation[][] parameterAnnotations, final boolean isVarArgs) {
             this.className = className;
             this.classNameShort = classNameShort;
             this.methodName = methodName;
@@ -47,6 +49,7 @@ public class GroovyStaticImportGenerator {
             this.returnType = returnType;
             this.parameterTypes = parameterTypes;
             this.parameterNames = parameterNames;
+            this.parameterAnnotations = parameterAnnotations;
             this.isVarArgs = isVarArgs;
         }
 
@@ -59,6 +62,7 @@ public class GroovyStaticImportGenerator {
                     m.getGenericReturnType(),
                     m.getGenericParameterTypes(),
                     Arrays.stream(m.getParameters()).map(Parameter::getName).toArray(String[]::new),
+                    m.getParameterAnnotations(),
                     m.isVarArgs());
 
             for (Parameter parameter : m.getParameters()) {
@@ -83,7 +87,6 @@ public class GroovyStaticImportGenerator {
                 return false;
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
             return Arrays.equals(parameterTypes, that.parameterTypes);
-
         }
 
         @Override
@@ -102,6 +105,7 @@ public class GroovyStaticImportGenerator {
                     ", returnType=" + returnType +
                     ", parameterTypes=" + Arrays.toString(parameterTypes) +
                     ", parameterNames=" + Arrays.toString(parameterNames) +
+                    ", parameterAnnotations=" + Arrays.toString(parameterAnnotations) +
                     '}';
         }
 
@@ -166,6 +170,10 @@ public class GroovyStaticImportGenerator {
 
         public String[] getParameterNames() {
             return parameterNames;
+        }
+
+        public Annotation[][] getParameterAnnotations() {
+            return parameterAnnotations;
         }
 
         public boolean isVarArgs() {

@@ -6,10 +6,12 @@ package io.deephaven.plot.util;
 import io.deephaven.base.Pair;
 import io.deephaven.libs.GroovyStaticImportGenerator.JavaFunction;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -371,34 +373,23 @@ public class GeneratePyV2FigureAPI {
         private final FunctionCallType functionCallType;
         private final String[] javaFuncs;
         private final String[] requiredParams;
-        private final String[] nullableParams;
         private final String pydoc;
         private final boolean generate;
 
         public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
-                      final String[] requiredParams, final String[] nullableParams, final String pydoc, final boolean generate) {
+                      final String[] requiredParams, final String pydoc, final boolean generate) {
             this.name = name;
             this.functionCallType = functionCallType;
             this.javaFuncs = javaFuncs;
             this.requiredParams = requiredParams == null ? new String[]{} : requiredParams;
-            this.nullableParams = nullableParams == null ? new String[]{} : nullableParams;
             this.pydoc = pydoc;
             this.generate = generate;
         }
 
-        public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
-                      final String[] requiredParams, final String pydoc, final boolean generate) {
-            this(name, functionCallType, javaFuncs, requiredParams, null, pydoc, generate);
-        }
 
         public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
                       final String[] requiredParams, final String pydoc) {
             this(name, functionCallType, javaFuncs, requiredParams, pydoc, true);
-        }
-
-        public PyFunc(final String name, final FunctionCallType functionCallType, final String[] javaFuncs,
-                      final String[] requiredParams, final String[] nullableParams, final String pydoc) {
-            this(name, functionCallType, javaFuncs, requiredParams, nullableParams, pydoc, true);
         }
 
         @Override
@@ -463,26 +454,21 @@ public class GeneratePyV2FigureAPI {
         }
 
         /**
-         * Is the parameter nullable for the function?
-         *
-         * @param parameter python parameter
-         * @return is the parameter nullable for the function?
-         */
-        public boolean isNullable(final PyArg parameter) {
-            return Arrays.asList(nullableParams).contains(parameter.name);
-        }
-
-        /**
          * Gets the valid Java method argument name combinations.
          *
          * @param signatures java functions with the same name.
+         * @param excludeNullableParams exclude nullable params from the arg name output
          * @return valid Java method argument name combinations.
          */
-        private static Collection<String[]> javaArgNames(final ArrayList<JavaFunction> signatures) {
+        private static Collection<String[]> javaArgNames(final ArrayList<JavaFunction> signatures, final boolean excludeNullableParams) {
             final Map<Set<String>, String[]> vals = new LinkedHashMap<>();
 
             for (JavaFunction f : signatures) {
-                final String[] params = f.getParameterNames();
+                final Annotation[][] paramAnnotations = f.getParameterAnnotations();
+                final String[] paramNames = f.getParameterNames();
+                final String[] params = IntStream.range(0, paramNames.length)
+                        .filter(i -> !excludeNullableParams || !Arrays.stream(paramAnnotations[i]).anyMatch(a -> a.annotationType().isAnnotationPresent(Nullable.class)))
+                        .mapToObj(i -> paramNames[i]).toArray(String[]::new);
                 final Set<String> s = new HashSet<>(Arrays.asList(params));
 
                 if (vals.containsKey(s) && !Arrays.equals(params, vals.get(s))) {
@@ -504,7 +490,7 @@ public class GeneratePyV2FigureAPI {
          */
         private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures,
                                                  final Map<String, PyArg> pyArgMap) {
-            return pyArgNames(signatures, pyArgMap, new String[]{});
+            return pyArgNames(signatures, pyArgMap, false);
         }
 
         /**
@@ -512,15 +498,15 @@ public class GeneratePyV2FigureAPI {
          *
          * @param signatures  java functions with the same name.
          * @param pyArgMap    possible python function arguments
-         * @param excludeArgs arguments to exclude from the output
+         * @param excludeNullableParams Exclude nullable parameters
          * @return valid Java method argument name combinations.
          */
         private static List<String[]> pyArgNames(final ArrayList<JavaFunction> signatures,
-                                                 final Map<String, PyArg> pyArgMap, String[] excludeArgs) {
+                                                 final Map<String, PyArg> pyArgMap, boolean excludeNullableParams) {
             final Set<Set<String>> seen = new HashSet<>();
-            return javaArgNames(signatures)
+            return javaArgNames(signatures, excludeNullableParams)
                     .stream()
-                    .map(an -> Arrays.stream(an).map(s -> pyArgMap.get(s).name).filter(s -> !Arrays.stream(excludeArgs).anyMatch(ex -> ex.equals(s))).toArray(String[]::new))
+                    .map(an -> Arrays.stream(an).map(s -> pyArgMap.get(s).name).toArray(String[]::new))
                     .filter(an -> seen.add(new HashSet<>(Arrays.asList(an))))
                     .sorted((first, second) -> {
                         final int c1 = Integer.compare(first.length, second.length);
@@ -803,7 +789,7 @@ public class GeneratePyV2FigureAPI {
                 final Key key = entry.getKey();
                 final ArrayList<JavaFunction> sigs = entry.getValue();
                 final List<String[]> argNameList = pyArgNames(sigs, pyArgMap);
-                final List<String[]> nonNullableArgNameList = pyArgNames(sigs, pyArgMap, nullableParams);
+                final List<String[]> nonNullableArgNameList = pyArgNames(sigs, pyArgMap, true);
 
                 if (argNameList.size() != nonNullableArgNameList.size()) {
                     throw new RuntimeException("Full argument list size " + argNameList.size() + " and non-nullable list size " + nonNullableArgNameList.size() + " do not match for " + key);

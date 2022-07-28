@@ -111,6 +111,7 @@ public class GeneratePlottingConvenience {
                 f.getReturnType(),
                 f.getParameterTypes(),
                 f.getParameterNames(),
+                f.getParameterAnnotations(),
                 f.isVarArgs());
 
         boolean skip = skip(f, ignoreSkips);

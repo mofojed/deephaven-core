@@ -1713,7 +1713,7 @@ public class ChartDescriptor {
 
     public native int getColspan();
 
-    public native double getColumn();
+    public native int getColumn();
 
     public native boolean getIs3d();
 
@@ -1723,7 +1723,7 @@ public class ChartDescriptor {
 
     public native JsArray<MultiSeriesDescriptor> getMultiSeriesList();
 
-    public native double getRow();
+    public native int getRow();
 
     public native int getRowspan();
 
@@ -1752,7 +1752,7 @@ public class ChartDescriptor {
 
     public native void setColspan(int value);
 
-    public native void setColumn(double value);
+    public native void setColumn(int value);
 
     public native void setIs3d(boolean value);
 
@@ -1767,7 +1767,7 @@ public class ChartDescriptor {
         setMultiSeriesList(Js.<JsArray<MultiSeriesDescriptor>>uncheckedCast(value));
     }
 
-    public native void setRow(double value);
+    public native void setRow(int value);
 
     public native void setRowspan(int value);
 

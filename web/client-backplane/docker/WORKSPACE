@@ -1,0 +1,81 @@
+workspace(
+    name = "web-client-backplane",
+)
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_jar")
+
+# Load J2CL, we don't get it from elemental2 or jsinterop-base
+_J2CL_VERSION = "3039e2234cdad581c9258919f2484f4e5ec29a4f"
+
+http_archive(
+    name = "com_google_j2cl",
+    strip_prefix = "j2cl-%s" % _J2CL_VERSION,
+    url = "https://github.com/google/j2cl/archive/%s.zip" % _J2CL_VERSION,
+)
+
+load("@com_google_j2cl//build_defs:repository.bzl", "load_j2cl_repo_deps")
+
+load_j2cl_repo_deps()
+
+load("@com_google_j2cl//build_defs:rules.bzl", "setup_j2cl_workspace")
+
+setup_j2cl_workspace()
+
+# Load elemental2 so we can share core
+http_archive(
+    name = "com_google_elemental2",
+    strip_prefix = "elemental2-7b90c43e5c7fb87ea325e2b7d7821656d4bb4001",
+    url = "https://github.com/google/elemental2/archive/7b90c43e5c7fb87ea325e2b7d7821656d4bb4001.zip",
+)
+
+# We're _not_ sharing this rule from elemental2, we want to change the externs glob
+#load("@com_google_elemental2//build_defs:repository.bzl", "load_elemental2_repo_deps")
+load("//build_defs:repository.bzl", "load_elemental2_repo_deps")
+
+load_elemental2_repo_deps()
+
+_JSINTEROP_BASE_VERSION = "c1ec6535f46c0a187a000ba9c11db87de72c3333"
+
+http_archive(
+    name = "com_google_jsinterop_base",
+    strip_prefix = "jsinterop-base-%s" % _JSINTEROP_BASE_VERSION,
+    url = "https://github.com/google/jsinterop-base/archive/%s.zip"% _JSINTEROP_BASE_VERSION,
+)
+http_jar(
+    name = "com_google_google_java_format",
+    url = "https://github.com/google/google-java-format/releases/download/google-java-format-1.6/google-java-format-1.6-all-deps.jar",
+    sha256 = "73faf7c9b95bffd72933fa24f23760a6b1d18499151cb39a81cda591ceb7a5f4",
+)
+
+#load("@com_google_elemental2//build_defs:workspace.bzl", "setup_elemental2_workspace")
+#
+#setup_elemental2_workspace()
+
+## Depend on the bazel rules to provide nodejs, so we can in turn get
+#http_archive(
+#    name = "build_bazel_rules_nodejs",
+#    sha256 = "f9e7b9f42ae202cc2d2ce6d698ccb49a9f7f7ea572a78fd451696d03ef2ee116",
+#    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.6.0/rules_nodejs-1.6.0.tar.gz"],
+#)
+#
+#load("@build_bazel_rules_nodejs//:index.bzl", "node_repositories")
+#
+#node_repositories(package_json = ["//:package.json"])
+
+#load("@build_bazel_rules_nodejs//:index.bzl", "npm_install")
+#
+#npm_install(
+#    name = "npm",
+#    package_json = "//:package.json",
+#    package_lock_json = "//:package-lock.json",
+#)
+
+#load("@npm//:install_bazel_dependencies.bzl", "install_bazel_dependencies")
+#
+#install_bazel_dependencies()
+
+## Set up TypeScript toolchain
+#load("@npm_bazel_typescript//:index.bzl", "ts_setup_workspace")
+#
+#ts_setup_workspace()

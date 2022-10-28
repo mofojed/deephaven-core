@@ -68,13 +68,13 @@ public class CompletionContext {
 
     public native String getTriggerCharacter();
 
-    public native double getTriggerKind();
+    public native int getTriggerKind();
 
     public native Uint8Array serializeBinary();
 
     public native void setTriggerCharacter(String value);
 
-    public native void setTriggerKind(double value);
+    public native void setTriggerKind(int value);
 
     public native CompletionContext.ToObjectReturnType0 toObject();
 

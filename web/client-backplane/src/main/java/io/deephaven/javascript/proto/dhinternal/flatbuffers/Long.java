@@ -11,12 +11,12 @@ import jsinterop.annotations.JsType;
 public class Long {
     public static Long ZERO;
 
-    public static native Long create(double low, double high);
+    public static native Long create(int low, int high);
 
-    public double high;
-    public double low;
+    public int high;
+    public int low;
 
-    public Long(double low, double high) {}
+    public Long(int low, int high) {}
 
     @JsMethod(name = "equals")
     public native boolean equals_(Object other);

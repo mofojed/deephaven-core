@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es3",
+    "inlineSourceMap": false,
+    "outDir": "/home/colin/workspace/gwt-grpc-web-improbable-eng/backplane-grpc/dist",
+    "declaration": true,
+    "noEmitHelpers": true,
+    "baseUrl": ".",
+    "paths": {
+      "google-protobuf": ["./jspb"],
+      "@improbable-eng/grpc-web": ["./grpc-web"],
+      "browser-headers": ["./browserHeaders"]
+    },
+    "typeRoots": [
+      "./src/dhinternal/"
+    ],
+    "types": ["flatbuffers"]
+  },
+  "exclude": [
+    "node_modules/**",
+    "bazel-project/"
+  ]
+}

@@ -166,7 +166,7 @@ public class TextDocumentContentChangeEvent {
 
     public native DocumentRange getRange();
 
-    public native double getRangeLength();
+    public native int getRangeLength();
 
     public native String getText();
 
@@ -178,7 +178,7 @@ public class TextDocumentContentChangeEvent {
 
     public native void setRange(DocumentRange value);
 
-    public native void setRangeLength(double value);
+    public native void setRangeLength(int value);
 
     public native void setText(String value);
 

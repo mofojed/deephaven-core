@@ -381,19 +381,19 @@ public class CompletionItem {
 
     public native String getFilterText();
 
-    public native double getInsertTextFormat();
+    public native int getInsertTextFormat();
 
-    public native double getKind();
+    public native int getKind();
 
     public native String getLabel();
 
-    public native double getLength();
+    public native int getLength();
 
     public native boolean getPreselect();
 
     public native String getSortText();
 
-    public native double getStart();
+    public native int getStart();
 
     public native TextEdit getTextEdit();
 
@@ -423,19 +423,19 @@ public class CompletionItem {
 
     public native void setFilterText(String value);
 
-    public native void setInsertTextFormat(double value);
+    public native void setInsertTextFormat(int value);
 
-    public native void setKind(double value);
+    public native void setKind(int value);
 
     public native void setLabel(String value);
 
-    public native void setLength(double value);
+    public native void setLength(int value);
 
     public native void setPreselect(boolean value);
 
     public native void setSortText(String value);
 
-    public native void setStart(double value);
+    public native void setStart(int value);
 
     public native void setTextEdit();
 

@@ -11,10 +11,10 @@ import jsinterop.annotations.JsType;
 public class Int64 {
     public static native Int64 fromString(String str);
 
-    public double hi;
-    public double lo;
+    public int hi;
+    public int lo;
 
-    public Int64(double lo, double hi) {}
+    public Int64(int lo, int hi) {}
 
     public native Int64 add(Int64 other);
 

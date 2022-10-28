@@ -64,15 +64,15 @@ public class Position {
 
     public static native Position.ToObjectReturnType toObject(boolean includeInstance, Position msg);
 
-    public native double getCharacter();
+    public native int getCharacter();
 
-    public native double getLine();
+    public native int getLine();
 
     public native Uint8Array serializeBinary();
 
-    public native void setCharacter(double value);
+    public native void setCharacter(int value);
 
-    public native void setLine(double value);
+    public native void setLine(int value);
 
     public native Position.ToObjectReturnType0 toObject();
 

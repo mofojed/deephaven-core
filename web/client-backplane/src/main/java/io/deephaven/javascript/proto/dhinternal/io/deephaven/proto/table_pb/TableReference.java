@@ -1,9 +1,7 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.tablereference.RefCase;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -185,7 +183,7 @@ public class TableReference {
 
     public native int getBatchOffset();
 
-    public native int getRefCase();
+    public native RefCase getRefCase();
 
     public native Ticket getTicket();
 

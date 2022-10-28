@@ -1,17 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf;
 
+import jsinterop.annotations.JsEnum;
 import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
 
-@JsType(
+@JsEnum(
         isNative = true,
         name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode",
         namespace = JsPackage.GLOBAL)
-public class ColumnConversionMode {
-    public static int JavaSerialization,
-            Stringify,
-            ThrowError;
+public enum ColumnConversionMode {
+    JavaSerialization, Stringify, ThrowError;
 }

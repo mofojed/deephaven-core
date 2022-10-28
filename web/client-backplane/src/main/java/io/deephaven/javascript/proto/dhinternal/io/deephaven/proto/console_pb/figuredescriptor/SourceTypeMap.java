@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
 import jsinterop.annotations.JsOverlay;
@@ -30,10 +27,7 @@ public interface SourceTypeMap {
     int getHIGH();
 
     @JsProperty(name = "HOVER_TEXT")
-    int getHOVER_TEXT();
-
-    @JsProperty(name = "TEXT")
-    int getTEXT();
+    double getHOVER_TEXT();
 
     @JsProperty(name = "LABEL")
     int getLABEL();
@@ -45,13 +39,16 @@ public interface SourceTypeMap {
     int getOPEN();
 
     @JsProperty(name = "PARENT")
-    int getPARENT();
+    double getPARENT();
 
     @JsProperty(name = "SHAPE")
     int getSHAPE();
 
     @JsProperty(name = "SIZE")
     int getSIZE();
+
+    @JsProperty(name = "TEXT")
+    double getTEXT();
 
     @JsProperty(name = "TIME")
     int getTIME();
@@ -87,10 +84,7 @@ public interface SourceTypeMap {
     void setHIGH(int HIGH);
 
     @JsProperty(name = "HOVER_TEXT")
-    void setHOVER_TEXT(int HOVER_TEXT);
-
-    @JsProperty(name = "TEXT")
-    void setTEXT(int TEXT);
+    void setHOVER_TEXT(double HOVER_TEXT);
 
     @JsProperty(name = "LABEL")
     void setLABEL(int LABEL);
@@ -102,13 +96,16 @@ public interface SourceTypeMap {
     void setOPEN(int OPEN);
 
     @JsProperty(name = "PARENT")
-    void setPARENT(int PARENT);
+    void setPARENT(double PARENT);
 
     @JsProperty(name = "SHAPE")
     void setSHAPE(int SHAPE);
 
     @JsProperty(name = "SIZE")
     void setSIZE(int SIZE);
+
+    @JsProperty(name = "TEXT")
+    void setTEXT(double TEXT);
 
     @JsProperty(name = "TIME")
     void setTIME(int TIME);

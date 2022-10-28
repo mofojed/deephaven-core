@@ -1,19 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.autocompleterequest;
 
+import jsinterop.annotations.JsEnum;
 import jsinterop.annotations.JsPackage;
-import jsinterop.annotations.JsType;
 
-@JsType(
+@JsEnum(
         isNative = true,
         name = "dhinternal.io.deephaven.proto.console_pb.AutoCompleteRequest.RequestCase",
         namespace = JsPackage.GLOBAL)
-public class RequestCase {
-    public static int CHANGE_DOCUMENT,
-            CLOSE_DOCUMENT,
-            GET_COMPLETION_ITEMS,
-            OPEN_DOCUMENT,
-            REQUEST_NOT_SET;
+public enum RequestCase {
+    CHANGE_DOCUMENT, CLOSE_DOCUMENT, GET_COMPLETION_ITEMS, OPEN_DOCUMENT, REQUEST_NOT_SET;
 }

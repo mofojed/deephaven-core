@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.grpcweb.chunkparser;
 
 import elemental2.core.JsArray;
@@ -26,7 +23,7 @@ public class ChunkParser {
         }
 
         @JsProperty
-        int getChunkType();
+        ChunkType getChunkType();
 
         @JsProperty
         Uint8Array getData();
@@ -35,7 +32,7 @@ public class ChunkParser {
         BrowserHeaders getTrailers();
 
         @JsProperty
-        void setChunkType(int chunkType);
+        void setChunkType(ChunkType chunkType);
 
         @JsProperty
         void setData(Uint8Array data);

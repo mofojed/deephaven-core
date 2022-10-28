@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.Uint8Array;
@@ -355,7 +352,7 @@ public class GetCompletionItemsRequest {
 
     public native Position getPosition();
 
-    public native int getRequestId();
+    public native double getRequestId();
 
     public native VersionedTextDocumentIdentifier getTextDocument();
 
@@ -381,7 +378,7 @@ public class GetCompletionItemsRequest {
 
     public native void setPosition(Position value);
 
-    public native void setRequestId(int value);
+    public native void setRequestId(double value);
 
     public native void setTextDocument();
 

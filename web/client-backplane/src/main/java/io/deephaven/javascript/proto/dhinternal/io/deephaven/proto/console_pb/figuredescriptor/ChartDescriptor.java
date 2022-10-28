@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
 import elemental2.core.JsArray;
@@ -740,6 +737,9 @@ public class ChartDescriptor {
         double getColspan();
 
         @JsProperty
+        double getColumn();
+
+        @JsProperty
         String getLegendColor();
 
         @JsProperty
@@ -747,6 +747,9 @@ public class ChartDescriptor {
 
         @JsProperty
         JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType> getMultiSeriesList();
+
+        @JsProperty
+        double getRow();
 
         @JsProperty
         double getRowspan();
@@ -786,6 +789,9 @@ public class ChartDescriptor {
         void setColspan(double colspan);
 
         @JsProperty
+        void setColumn(double column);
+
+        @JsProperty
         void setIs3d(boolean is3d);
 
         @JsProperty
@@ -805,6 +811,9 @@ public class ChartDescriptor {
                     Js.<JsArray<ChartDescriptor.ToObjectReturnType.MultiSeriesListFieldType>>uncheckedCast(
                             multiSeriesList));
         }
+
+        @JsProperty
+        void setRow(double row);
 
         @JsProperty
         void setRowspan(double rowspan);
@@ -1555,6 +1564,9 @@ public class ChartDescriptor {
         double getColspan();
 
         @JsProperty
+        double getColumn();
+
+        @JsProperty
         String getLegendColor();
 
         @JsProperty
@@ -1562,6 +1574,9 @@ public class ChartDescriptor {
 
         @JsProperty
         JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType> getMultiSeriesList();
+
+        @JsProperty
+        double getRow();
 
         @JsProperty
         double getRowspan();
@@ -1601,6 +1616,9 @@ public class ChartDescriptor {
         void setColspan(double colspan);
 
         @JsProperty
+        void setColumn(double column);
+
+        @JsProperty
         void setIs3d(boolean is3d);
 
         @JsProperty
@@ -1620,6 +1638,9 @@ public class ChartDescriptor {
                     Js.<JsArray<ChartDescriptor.ToObjectReturnType0.MultiSeriesListFieldType>>uncheckedCast(
                             multiSeriesList));
         }
+
+        @JsProperty
+        void setRow(double row);
 
         @JsProperty
         void setRowspan(double rowspan);
@@ -1692,6 +1713,8 @@ public class ChartDescriptor {
 
     public native int getColspan();
 
+    public native double getColumn();
+
     public native boolean getIs3d();
 
     public native String getLegendColor();
@@ -1699,6 +1722,8 @@ public class ChartDescriptor {
     public native String getLegendFont();
 
     public native JsArray<MultiSeriesDescriptor> getMultiSeriesList();
+
+    public native double getRow();
 
     public native int getRowspan();
 
@@ -1727,6 +1752,8 @@ public class ChartDescriptor {
 
     public native void setColspan(int value);
 
+    public native void setColumn(double value);
+
     public native void setIs3d(boolean value);
 
     public native void setLegendColor(String value);
@@ -1739,6 +1766,8 @@ public class ChartDescriptor {
     public final void setMultiSeriesList(MultiSeriesDescriptor[] value) {
         setMultiSeriesList(Js.<JsArray<MultiSeriesDescriptor>>uncheckedCast(value));
     }
+
+    public native void setRow(double value);
 
     public native void setRowspan(int value);
 

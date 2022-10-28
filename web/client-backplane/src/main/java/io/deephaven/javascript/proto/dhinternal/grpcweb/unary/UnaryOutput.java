@@ -1,9 +1,7 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.grpcweb.unary;
 
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -28,7 +26,7 @@ public interface UnaryOutput<TResponse> {
     TResponse getMessage();
 
     @JsProperty
-    int getStatus();
+    Code getStatus();
 
     @JsProperty
     String getStatusMessage();
@@ -43,7 +41,7 @@ public interface UnaryOutput<TResponse> {
     void setMessage(TResponse message);
 
     @JsProperty
-    void setStatus(int status);
+    void setStatus(Code status);
 
     @JsProperty
     void setStatusMessage(String statusMessage);

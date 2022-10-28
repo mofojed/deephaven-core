@@ -1,9 +1,7 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.value.DataCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -172,7 +170,7 @@ public class Value {
 
     public native void clearReference();
 
-    public native int getDataCase();
+    public native DataCase getDataCase();
 
     public native Literal getLiteral();
 

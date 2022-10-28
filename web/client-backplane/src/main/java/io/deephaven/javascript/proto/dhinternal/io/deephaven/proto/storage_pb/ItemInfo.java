@@ -93,7 +93,7 @@ public class ItemInfo {
 
     public native String getSize();
 
-    public native int getType();
+    public native double getType();
 
     public native boolean hasEtag();
 
@@ -105,7 +105,7 @@ public class ItemInfo {
 
     public native void setSize(String value);
 
-    public native void setType(int value);
+    public native void setType(double value);
 
     public native ItemInfo.ToObjectReturnType0 toObject();
 

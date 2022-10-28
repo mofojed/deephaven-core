@@ -1,11 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.jspb;
 
 import elemental2.core.ArrayBuffer;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.jspb.binaryconstants.FieldType;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -214,35 +212,35 @@ public class BinaryWriter {
     public native void reset();
 
     @JsOverlay
-    public final void writeAny(int fieldType, double field, JsArray<Object> value) {
+    public final void writeAny(FieldType fieldType, double field, JsArray<Object> value) {
         writeAny(fieldType, field, Js.<BinaryWriter.WriteAnyValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
-    public final void writeAny(int fieldType, double field, Object[] value) {
+    public final void writeAny(FieldType fieldType, double field, Object[] value) {
         writeAny(fieldType, field, Js.<JsArray<Object>>uncheckedCast(value));
     }
 
     @JsOverlay
-    public final void writeAny(int fieldType, double field, String value) {
+    public final void writeAny(FieldType fieldType, double field, String value) {
         writeAny(fieldType, field, Js.<BinaryWriter.WriteAnyValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
-    public final void writeAny(int fieldType, double field, Uint8Array value) {
+    public final void writeAny(FieldType fieldType, double field, Uint8Array value) {
         writeAny(fieldType, field, Js.<BinaryWriter.WriteAnyValueUnionType>uncheckedCast(value));
     }
 
     public native void writeAny(
-            int fieldType, double field, BinaryWriter.WriteAnyValueUnionType value);
+            FieldType fieldType, double field, BinaryWriter.WriteAnyValueUnionType value);
 
     @JsOverlay
-    public final void writeAny(int fieldType, double field, boolean value) {
+    public final void writeAny(FieldType fieldType, double field, boolean value) {
         writeAny(fieldType, field, Js.<BinaryWriter.WriteAnyValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
-    public final void writeAny(int fieldType, double field, double value) {
+    public final void writeAny(FieldType fieldType, double field, double value) {
         writeAny(fieldType, field, Js.<BinaryWriter.WriteAnyValueUnionType>uncheckedCast(value));
     }
 

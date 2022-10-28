@@ -18,20 +18,20 @@ public interface ItemTypeMap {
     }
 
     @JsProperty(name = "DIRECTORY")
-    int getDIRECTORY();
+    double getDIRECTORY();
 
     @JsProperty(name = "FILE")
-    int getFILE();
+    double getFILE();
 
     @JsProperty(name = "UNKNOWN")
-    int getUNKNOWN();
+    double getUNKNOWN();
 
     @JsProperty(name = "DIRECTORY")
-    void setDIRECTORY(int DIRECTORY);
+    void setDIRECTORY(double DIRECTORY);
 
     @JsProperty(name = "FILE")
-    void setFILE(int FILE);
+    void setFILE(double FILE);
 
     @JsProperty(name = "UNKNOWN")
-    void setUNKNOWN(int UNKNOWN);
+    void setUNKNOWN(double UNKNOWN);
 }

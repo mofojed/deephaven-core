@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
 import jsinterop.annotations.JsOverlay;
@@ -54,7 +51,7 @@ public interface SeriesPlotStyleMap {
     int getSTEP();
 
     @JsProperty(name = "TREEMAP")
-    int getTREEMAP();
+    double getTREEMAP();
 
     @JsProperty(name = "AREA")
     void setAREA(int AREA);
@@ -90,5 +87,5 @@ public interface SeriesPlotStyleMap {
     void setSTEP(int STEP);
 
     @JsProperty(name = "TREEMAP")
-    void setTREEMAP(int TREEMAP);
+    void setTREEMAP(double TREEMAP);
 }

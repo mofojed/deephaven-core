@@ -1,10 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.autocompleterequest.RequestCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -744,7 +742,7 @@ public class AutoCompleteRequest {
 
     public native OpenDocumentRequest getOpenDocument();
 
-    public native int getRequestCase();
+    public native RequestCase getRequestCase();
 
     public native boolean hasChangeDocument();
 

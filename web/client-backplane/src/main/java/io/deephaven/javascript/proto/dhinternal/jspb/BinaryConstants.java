@@ -1,8 +1,7 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.jspb;
 
+import io.deephaven.javascript.proto.dhinternal.jspb.binaryconstants.FieldType;
+import io.deephaven.javascript.proto.dhinternal.jspb.binaryconstants.WireType;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
@@ -11,7 +10,7 @@ import jsinterop.annotations.JsType;
 public class BinaryConstants {
     @JsFunction
     public interface FieldTypeToWireTypeFn {
-        int onInvoke(int p0);
+        WireType onInvoke(FieldType p0);
     }
 
     public static double FLOAT32_EPS;

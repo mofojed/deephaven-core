@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor;
 
 import elemental2.core.JsArray;
@@ -209,7 +206,7 @@ public class SourceDescriptor {
 
     public native OneClickDescriptor getOneClick();
 
-    public native int getPartitionedTableId();
+    public native double getPartitionedTableId();
 
     public native int getTableId();
 
@@ -229,7 +226,7 @@ public class SourceDescriptor {
 
     public native void setOneClick(OneClickDescriptor value);
 
-    public native void setPartitionedTableId(int value);
+    public native void setPartitionedTableId(double value);
 
     public native void setTableId(int value);
 

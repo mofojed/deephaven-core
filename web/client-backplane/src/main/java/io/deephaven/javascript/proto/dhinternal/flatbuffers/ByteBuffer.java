@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.flatbuffers;
 
 import elemental2.core.Uint8Array;
@@ -49,7 +46,7 @@ public class ByteBuffer {
 
     public native double __offset(double bb_pos, double vtable_offset);
 
-    public native ByteBuffer.__stringUnionType __string(double offset, int optionalEncoding);
+    public native ByteBuffer.__stringUnionType __string(double offset, Encoding optionalEncoding);
 
     public native ByteBuffer.__stringUnionType __string(double offset);
 

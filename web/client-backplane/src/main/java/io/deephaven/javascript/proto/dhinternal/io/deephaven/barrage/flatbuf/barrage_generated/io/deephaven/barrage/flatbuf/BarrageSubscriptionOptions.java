@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf;
 
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
@@ -16,7 +13,7 @@ public class BarrageSubscriptionOptions {
     public static native void addBatchSize(Builder builder, double batchSize);
 
     public static native void addColumnConversionMode(
-            Builder builder, int columnConversionMode);
+            Builder builder, ColumnConversionMode columnConversionMode);
 
     public static native void addMaxMessageSize(Builder builder, double maxMessageSize);
 
@@ -26,7 +23,7 @@ public class BarrageSubscriptionOptions {
 
     public static native double createBarrageSubscriptionOptions(
             Builder builder,
-            int columnConversionMode,
+            ColumnConversionMode columnConversionMode,
             boolean useDeephavenNulls,
             double minUpdateIntervalMs,
             double batchSize,
@@ -55,7 +52,7 @@ public class BarrageSubscriptionOptions {
 
     public native double batchSize();
 
-    public native int columnConversionMode();
+    public native ColumnConversionMode columnConversionMode();
 
     public native double maxMessageSize();
 

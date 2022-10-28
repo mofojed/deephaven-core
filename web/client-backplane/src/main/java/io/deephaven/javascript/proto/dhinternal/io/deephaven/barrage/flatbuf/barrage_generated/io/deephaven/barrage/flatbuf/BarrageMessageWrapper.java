@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf;
 
 import elemental2.core.Int8Array;
@@ -60,10 +57,10 @@ public class BarrageMessageWrapper {
 
     public static native void addMsgPayload(Builder builder, double msgPayloadOffset);
 
-    public static native void addMsgType(Builder builder, int msgType);
+    public static native void addMsgType(Builder builder, BarrageMessageType msgType);
 
     public static native double createBarrageMessageWrapper(
-            Builder builder, double magic, int msgType, double msgPayloadOffset);
+            Builder builder, double magic, BarrageMessageType msgType, double msgPayloadOffset);
 
     @Deprecated
     public static native double createMsgPayloadVector(
@@ -126,5 +123,5 @@ public class BarrageMessageWrapper {
 
     public native double msgPayloadLength();
 
-    public native int msgType();
+    public native BarrageMessageType msgType();
 }

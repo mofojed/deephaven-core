@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.JsArray;
@@ -438,7 +435,7 @@ public class GetCompletionItemsResponse {
 
     public native JsArray<CompletionItem> getItemsList();
 
-    public native int getRequestId();
+    public native double getRequestId();
 
     public native boolean getSuccess();
 
@@ -451,7 +448,7 @@ public class GetCompletionItemsResponse {
 
     public native void setItemsList(JsArray<CompletionItem> value);
 
-    public native void setRequestId(int value);
+    public native void setRequestId(double value);
 
     public native void setSuccess(boolean value);
 

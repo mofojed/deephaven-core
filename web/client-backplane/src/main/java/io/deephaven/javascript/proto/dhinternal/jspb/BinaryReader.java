@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.jspb;
 
 import elemental2.core.ArrayBuffer;
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.jspb.binaryconstants.FieldType;
+import io.deephaven.javascript.proto.dhinternal.jspb.binaryconstants.WireType;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOverlay;
@@ -15,6 +14,54 @@ import jsinterop.base.Js;
 
 @JsType(isNative = true, name = "dhinternal.jspb.BinaryReader", namespace = JsPackage.GLOBAL)
 public class BinaryReader {
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface AllocBytesUnionType {
+        @JsOverlay
+        static BinaryReader.AllocBytesUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default ArrayBuffer asArrayBuffer() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default JsArray<Double> asJsArray() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        default Uint8Array asUint8Array() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isArrayBuffer() {
+            return (Object) this instanceof ArrayBuffer;
+        }
+
+        @JsOverlay
+        default boolean isJsArray() {
+            return (Object) this instanceof JsArray;
+        }
+
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isUint8Array() {
+            return (Object) this instanceof Uint8Array;
+        }
+    }
+
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface AllocBytesUnionType {
         @JsOverlay
@@ -252,64 +299,76 @@ public class BinaryReader {
     public static native BinaryReader alloc_STATIC(BinaryReader.AllocBytesUnionType bytes);
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes, double start) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(ArrayBuffer bytes) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(
             JsArray<Double> bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(JsArray<Double> bytes, double start) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(JsArray<Double> bytes) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes, double start) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(String bytes) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes, double start, double length) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start, length);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes, double start) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes), start);
     }
 
     @JsOverlay
+    @JsMethod(name = "alloc")
     public static final BinaryReader alloc_STATIC(Uint8Array bytes) {
-        return alloc_STATIC(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
+        return alloc(Js.<BinaryReader.AllocBytesUnionType>uncheckedCast(bytes));
     }
 
     @JsOverlay
@@ -467,13 +526,13 @@ public class BinaryReader {
 
     public native double getFieldNumber();
 
-    public native int getWireType();
+    public native WireType getWireType();
 
     public native boolean isEndGroup();
 
     public native boolean nextField();
 
-    public native BinaryReader.ReadAnyUnionType readAny(int fieldType);
+    public native BinaryReader.ReadAnyUnionType readAny(FieldType fieldType);
 
     public native boolean readBool();
 

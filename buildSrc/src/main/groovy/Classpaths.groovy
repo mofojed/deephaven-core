@@ -24,7 +24,7 @@ class Classpaths {
     static final String ELEMENTAL_VERSION = '1.1.0'
 
     static final String GWT_GROUP = 'com.google.gwt'
-    static final String GWT_VERSION = '2.9.0'
+    static final String GWT_VERSION = '2.10.0'
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'

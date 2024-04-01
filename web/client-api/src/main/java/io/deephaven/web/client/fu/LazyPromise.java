@@ -134,7 +134,7 @@ public class LazyPromise<T> implements PromiseLike<T> {
     }
 
     public boolean isUnresolved() {
-        return failed == null && succeeded == null;
+        return !isFailure() && !isSuccess();
     }
 
     public boolean isResolved() {
@@ -149,9 +149,13 @@ public class LazyPromise<T> implements PromiseLike<T> {
         return failed == null && isSuccess;
     }
 
+    public boolean isFulfilled() {
+        return !isUnresolved();
+    }
+
     public void fail(Object reason) {
-        if (isSuccess) {
-            JsLog.debug("Got failure after success", this, reason);
+        if (isFulfilled()) {
+            JsLog.debug("Got failure after fulfilled", this, reason, this.succeeded, failed);
         } else {
             this.failed = reason;
             runLater(this::flushCallbacks);
@@ -159,8 +163,8 @@ public class LazyPromise<T> implements PromiseLike<T> {
     }
 
     public void succeed(T value) {
-        if (failed != null) {
-            JsLog.debug("Got success after failure", this, value, failed);
+        if (isFulfilled()) {
+            JsLog.debug("Got success after fulfilled", this, value, this.succeeded, failed);
         } else {
             this.isSuccess = true;
             // just storing value is not good enough, since we can be resolved w/ null

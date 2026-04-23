@@ -106,6 +106,38 @@ export interface TableServiceClientCtor {
   new (serviceHost: string, options?: RpcOptions): TableServiceClient;
 }
 
+// ----- Arrow Flight types used for DoExchange / Barrage subscriptions -----
+
+export interface FlightData {
+  setDataHeader(value: Uint8Array): void;
+  setAppMetadata(value: Uint8Array): void;
+  setDataBody(value: Uint8Array): void;
+  getDataHeader_asU8(): Uint8Array;
+  getAppMetadata_asU8(): Uint8Array;
+  getDataBody_asU8(): Uint8Array;
+}
+
+export interface FlightDataCtor {
+  new (): FlightData;
+}
+
+export interface BidirectionalStream<ReqT, ResT> {
+  write(message: ReqT): BidirectionalStream<ReqT, ResT>;
+  end(): void;
+  cancel(): void;
+  on(type: 'data', handler: (message: ResT) => void): BidirectionalStream<ReqT, ResT>;
+  on(type: 'end', handler: (status?: unknown) => void): BidirectionalStream<ReqT, ResT>;
+  on(type: 'status', handler: (status: unknown) => void): BidirectionalStream<ReqT, ResT>;
+}
+
+export interface FlightServiceClient {
+  doExchange(metadata?: Record<string, string>): BidirectionalStream<FlightData, FlightData>;
+}
+
+export interface FlightServiceClientCtor {
+  new (serviceHost: string, options?: RpcOptions): FlightServiceClient;
+}
+
 export interface FetchTransportFactory {
   (init: Record<string, unknown>): TransportFactory;
 }
@@ -128,6 +160,14 @@ export interface DhInternal {
         };
         config_pb_service: { ConfigServiceClient: ConfigServiceClientCtor };
         table_pb_service: { TableServiceClient: TableServiceClientCtor };
+      };
+    };
+  };
+  arrow: {
+    flight: {
+      protocol: {
+        Flight_pb: { FlightData: FlightDataCtor };
+        Flight_pb_service: { FlightServiceClient: FlightServiceClientCtor };
       };
     };
   };

@@ -23,6 +23,14 @@ export interface OpenApiTransport {
    * the initial row count reported by the server.
    */
   fetchTableByScopeName(name: string): Promise<FetchTableResult>;
+
+  /**
+   * Open a Flight.DoExchange bidirectional stream. Used to carry Barrage
+   * subscriptions: the client sends `BarrageSubscriptionRequest` wrapped in a
+   * FlightData's `app_metadata`, and the server streams back FlightData frames
+   * with Arrow IPC payloads and `BarrageUpdateMetadata`.
+   */
+  openDoExchange(): DoExchangeStream;
 }
 
 export interface FetchTableResult {
@@ -30,4 +38,27 @@ export interface FetchTableResult {
   ticket: Uint8Array;
   /** The initial row count. Negative values mean "uncoalesced, unknown yet". */
   size: number;
+}
+
+/** Minimal FlightData-shaped record carried on a `DoExchangeStream`. */
+export interface DoExchangeFrame {
+  dataHeader: Uint8Array;
+  appMetadata: Uint8Array;
+  dataBody: Uint8Array;
+}
+
+/**
+ * Transport-agnostic view of a Flight.DoExchange bidirectional stream.
+ * Framing and protobuf encoding/decoding is the transport's responsibility;
+ * consumers just deal with raw Barrage/Arrow byte triples.
+ */
+export interface DoExchangeStream {
+  /** Send a FlightData frame to the server. */
+  send(frame: DoExchangeFrame): void;
+  /** Register an incoming-frame handler. */
+  onData(handler: (frame: DoExchangeFrame) => void): void;
+  /** Register a stream-end handler. Called exactly once. */
+  onEnd(handler: (error?: Error) => void): void;
+  /** Cancel the stream from the client side. */
+  cancel(): void;
 }

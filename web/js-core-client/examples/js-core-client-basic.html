@@ -5,47 +5,108 @@
     <title>@deephaven/js-core-client basic example</title>
     <style>
         body { font-family: monospace; padding: 1em; }
-        pre { background: #f0f0f0; padding: 1em; border-radius: 4px; }
+        pre#log { background: #f0f0f0; padding: 0.5em; border-radius: 4px; max-height: 12em; overflow-y: auto; }
+        table { border-spacing: 0; margin-top: 1em; }
+        thead td { font-weight: bold; border-bottom: 1px solid black; padding: 4px 8px; }
+        tbody td { border-bottom: 1px solid gray; padding: 4px 8px; }
         .err { color: #b00020; }
-        .ok { color: #0b6e1b; }
+        .ok  { color: #0b6e1b; }
+        .meta { margin: 0.5em 0; }
     </style>
 </head>
 <body>
 
 <h3>@deephaven/js-core-client</h3>
 <p>
-    Logs in anonymously, fetches a scope variable named <code>my_table</code>,
-    and prints its size. Create the variable in a console session first, e.g.
-    <code>my_table = empty_table(42)</code> (Python) or
-    <code>my_table = emptyTable(42)</code> (Groovy).
+    Logs in anonymously, fetches a scope variable (default <code>my_table</code>),
+    subscribes to a viewport, and renders the rows live. Examples to run in the
+    console first:
 </p>
-<pre id="out">running...</pre>
+<ul>
+    <li>Static: <code>my_table = empty_table(42).update_view(['I=i', 'J=i*i', 'S="row"+i'])</code></li>
+    <li>Ticking: <code>t = time_table("PT1s").update_view(['I=ii'])</code> — open <code>?table=t</code></li>
+    <li>Tail viewport: append <code>&amp;tail=10</code> to see the last 10 rows.</li>
+</ul>
+<div class="meta">
+    Table: <span id="name"></span>
+    &nbsp;&nbsp; Size: <span id="size">?</span>
+    &nbsp;&nbsp; Range: <span id="range">?</span>
+</div>
+<pre id="log">running...</pre>
+<table id="rows"></table>
 
 <script type="module">
-    // Served from the same server, so a relative import works.
     import { CoreClient } from './index.js';
 
-    const out = document.getElementById('out');
+    const logEl = document.getElementById('log');
+    const sizeEl = document.getElementById('size');
+    const rangeEl = document.getElementById('range');
+    const nameEl = document.getElementById('name');
+    const rowsEl = document.getElementById('rows');
     const log = (msg, cls) => {
+        if (logEl.textContent === 'running...') logEl.textContent = '';
         const line = document.createElement('div');
         if (cls) line.className = cls;
         line.textContent = msg;
-        if (out.textContent === 'running...') out.textContent = '';
-        out.appendChild(line);
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
     };
 
     (async () => {
+        const params = new URLSearchParams(window.location.search);
+        const tableName = params.get('table') ?? 'my_table';
+        const tail = params.has('tail') ? Number(params.get('tail')) : null;
+
         const serverUrl = window.location.protocol + '//' + window.location.host + '/';
         log(`connecting to ${serverUrl}`);
-
         const client = new CoreClient(serverUrl);
         await client.login({ type: 'anonymous' });
         log('logged in anonymously', 'ok');
 
-        const tableName = new URLSearchParams(window.location.search).get('table') ?? 'my_table';
+        nameEl.textContent = tableName;
         const table = await client.getTable(tableName);
-        const size = await table.size();
-        log(`table "${tableName}" size = ${size}`, 'ok');
+        log(`fetched table "${tableName}"`, 'ok');
+
+        table.onSizeUpdate((size) => {
+            sizeEl.textContent = String(size);
+        });
+
+        const viewport = tail !== null
+            ? { firstRow: -tail, lastRow: -1 }
+            : { firstRow: 0, lastRow: 9 };
+
+        let headerRendered = false;
+        table.onUpdate((update) => {
+            rangeEl.textContent = `${update.firstRow}..${update.lastRow} (${update.reversed ? 'tail' : 'head'})`;
+            if (!headerRendered) {
+                const thead = document.createElement('thead');
+                const tr = document.createElement('tr');
+                for (const c of update.columns) {
+                    const td = document.createElement('td');
+                    td.textContent = c.name;
+                    tr.appendChild(td);
+                }
+                thead.appendChild(tr);
+                rowsEl.appendChild(thead);
+                headerRendered = true;
+            }
+            let tbody = rowsEl.querySelector('tbody');
+            if (tbody) tbody.remove();
+            tbody = document.createElement('tbody');
+            for (const row of update.rows) {
+                const tr = document.createElement('tr');
+                for (const c of update.columns) {
+                    const td = document.createElement('td');
+                    const v = row.get(c);
+                    td.textContent = v === null || v === undefined ? '' : String(v);
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+            rowsEl.appendChild(tbody);
+        });
+
+        table.setViewport(viewport);
     })().catch((err) => {
         log(`ERROR: ${err?.message ?? err}`, 'err');
         console.error(err);

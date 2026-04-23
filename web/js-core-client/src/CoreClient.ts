@@ -61,7 +61,12 @@ export class CoreClient {
 
   async getTable(name: string): Promise<Table> {
     const result = await this.transport.fetchTableByScopeName(name);
-    return new Table({ name, ticket: result.ticket, size: result.size });
+    return new Table({
+      name,
+      ticket: result.ticket,
+      size: result.size,
+      transport: this.transport,
+    });
   }
 }
 

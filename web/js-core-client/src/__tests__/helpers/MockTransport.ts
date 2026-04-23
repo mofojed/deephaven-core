@@ -1,4 +1,6 @@
 import type {
+  DoExchangeFrame,
+  DoExchangeStream,
   FetchTableResult,
   OpenApiTransport,
 } from '../../transport/OpenApiTransport.js';
@@ -6,6 +8,23 @@ import type {
 export interface MockTransportOptions {
   authConstants?: Map<string, string>;
   tables?: Map<string, FetchTableResult>;
+  /**
+   * Called once per `openDoExchange()`. Receives a synthetic server-side
+   * controller that tests use to emit incoming frames or close the stream.
+   * The controller is also exposed via `MockTransport.exchanges`.
+   */
+  onDoExchange?: (controller: MockExchangeController) => void;
+}
+
+export interface MockExchangeController {
+  /** Frames the test sent from the "client" side. */
+  readonly sent: DoExchangeFrame[];
+  /** Emit a frame from the synthetic server to the client. */
+  emit(frame: DoExchangeFrame): void;
+  /** Close the stream. `error` = undefined for clean end. */
+  end(error?: Error): void;
+  /** True once the client has called `cancel()`. */
+  readonly cancelled: boolean;
 }
 
 /**
@@ -15,6 +34,8 @@ export interface MockTransportOptions {
 export class MockTransport implements OpenApiTransport {
   readonly authConstants: Map<string, string>;
   readonly tables: Map<string, FetchTableResult>;
+  readonly exchanges: MockExchangeController[] = [];
+  private readonly onDoExchange?: (c: MockExchangeController) => void;
 
   readonly calls: {
     getAuthenticationConstants: number;
@@ -29,6 +50,7 @@ export class MockTransport implements OpenApiTransport {
   constructor(options: MockTransportOptions = {}) {
     this.authConstants = options.authConstants ?? new Map([['AuthHandlers', 'Anonymous']]);
     this.tables = options.tables ?? new Map();
+    this.onDoExchange = options.onDoExchange;
   }
 
   async getAuthenticationConstants(): Promise<Map<string, string>> {
@@ -51,5 +73,72 @@ export class MockTransport implements OpenApiTransport {
 
   get lastAuthorization(): { type: string; value: string } | undefined {
     return this.calls.setAuthorization[this.calls.setAuthorization.length - 1];
+  }
+
+  openDoExchange(): DoExchangeStream {
+    const sent: DoExchangeFrame[] = [];
+    const dataHandlers: Array<(frame: DoExchangeFrame) => void> = [];
+    const endHandlers: Array<(error?: Error) => void> = [];
+    // Frames emitted before the consumer registered `onData` are queued and
+    // delivered as soon as the first handler attaches — mirrors how a real
+    // grpc-web bidi stream buffers in-flight server messages.
+    const pendingFrames: DoExchangeFrame[] = [];
+    let pendingEnd: { error?: Error } | null = null;
+    let cancelled = false;
+    let ended = false;
+
+    const fireEnd = (error?: Error): void => {
+      if (ended) return;
+      ended = true;
+      if (endHandlers.length === 0) {
+        pendingEnd = { error };
+        return;
+      }
+      for (const h of endHandlers) h(error);
+    };
+
+    const controller: MockExchangeController = {
+      sent,
+      emit(frame: DoExchangeFrame): void {
+        if (dataHandlers.length === 0) {
+          pendingFrames.push(frame);
+          return;
+        }
+        for (const h of dataHandlers) h(frame);
+      },
+      end(error?: Error): void {
+        fireEnd(error);
+      },
+      get cancelled() {
+        return cancelled;
+      },
+    };
+    this.exchanges.push(controller);
+    this.onDoExchange?.(controller);
+
+    return {
+      send(frame: DoExchangeFrame): void {
+        sent.push(frame);
+      },
+      onData(handler): void {
+        dataHandlers.push(handler);
+        if (dataHandlers.length === 1 && pendingFrames.length > 0) {
+          const drain = pendingFrames.splice(0, pendingFrames.length);
+          for (const f of drain) handler(f);
+        }
+      },
+      onEnd(handler): void {
+        endHandlers.push(handler);
+        if (pendingEnd) {
+          const p = pendingEnd;
+          pendingEnd = null;
+          handler(p.error);
+        }
+      },
+      cancel(): void {
+        cancelled = true;
+        fireEnd();
+      },
+    };
   }
 }

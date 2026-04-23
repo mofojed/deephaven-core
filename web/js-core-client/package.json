@@ -23,16 +23,23 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && npm run bundle",
+    "bundle": "esbuild dist/index.js --bundle --format=esm --outfile=dist-browser/index.js --platform=browser --legal-comments=none",
     "test": "vitest run",
     "check": "npm run test && npm run build"
   },
   "devDependencies": {
+    "@improbable-eng/grpc-web": "^0.15.0",
+    "esbuild": "^0.23.0",
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
   },
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "apache-arrow": "^21.1.0",
+    "flatbuffers": "^25.9.23"
   }
 }

@@ -4,11 +4,17 @@ import type {
   DhInternal,
   DhInternalModule,
   ExportedTableCreationResponse,
+  FlightServiceClient,
   TableServiceClient,
   Ticket,
   UnaryCallback,
 } from './openapi-types.js';
-import type { FetchTableResult, OpenApiTransport } from './OpenApiTransport.js';
+import type {
+  DoExchangeFrame,
+  DoExchangeStream,
+  FetchTableResult,
+  OpenApiTransport,
+} from './OpenApiTransport.js';
 
 const SCOPE_PREFIX = 's'.charCodeAt(0);
 const EXPORT_PREFIX = 'e'.charCodeAt(0);
@@ -23,6 +29,7 @@ export class DhInternalTransport implements OpenApiTransport {
   private dhInternalPromise?: Promise<DhInternal>;
   private configClient?: ConfigServiceClient;
   private tableClient?: TableServiceClient;
+  private flightClient?: FlightServiceClient;
   private dh?: DhInternal;
   private authorization = '';
   private nextExportId = 1;
@@ -78,6 +85,52 @@ export class DhInternalTransport implements OpenApiTransport {
     };
   }
 
+  openDoExchange(): DoExchangeStream {
+    if (!this.dh || !this.flightClient) {
+      throw new Error('openDoExchange: call login() first so the transport is loaded');
+    }
+    const dh = this.dh;
+    const stream = this.flightClient.doExchange(this.buildMetadata());
+    const dataHandlers: Array<(frame: DoExchangeFrame) => void> = [];
+    const endHandlers: Array<(error?: Error) => void> = [];
+
+    stream.on('data', (msg) => {
+      const frame: DoExchangeFrame = {
+        dataHeader: msg.getDataHeader_asU8(),
+        appMetadata: msg.getAppMetadata_asU8(),
+        dataBody: msg.getDataBody_asU8(),
+      };
+      for (const h of dataHandlers) h(frame);
+    });
+    stream.on('end', (status) => {
+      const err = toStreamError(status);
+      for (const h of endHandlers) h(err);
+    });
+    stream.on('status', (status) => {
+      const err = toStreamError(status);
+      if (err) for (const h of endHandlers) h(err);
+    });
+
+    return {
+      send(frame: DoExchangeFrame): void {
+        const msg = new dh.arrow.flight.protocol.Flight_pb.FlightData();
+        msg.setDataHeader(frame.dataHeader);
+        msg.setAppMetadata(frame.appMetadata);
+        msg.setDataBody(frame.dataBody);
+        stream.write(msg);
+      },
+      onData(handler): void {
+        dataHandlers.push(handler);
+      },
+      onEnd(handler): void {
+        endHandlers.push(handler);
+      },
+      cancel(): void {
+        stream.cancel();
+      },
+    };
+  }
+
   private buildMetadata(): Record<string, string> {
     return this.authorization ? { authorization: this.authorization } : {};
   }
@@ -114,8 +167,16 @@ export class DhInternalTransport implements OpenApiTransport {
     };
     this.configClient = new this.dh.io.deephaven_core.proto.config_pb_service.ConfigServiceClient(this.serviceHost, rpcOptions);
     this.tableClient = new this.dh.io.deephaven_core.proto.table_pb_service.TableServiceClient(this.serviceHost, rpcOptions);
+    this.flightClient = new this.dh.arrow.flight.protocol.Flight_pb_service.FlightServiceClient(this.serviceHost, rpcOptions);
     return this.dh;
   }
+}
+
+function toStreamError(status: unknown): Error | undefined {
+  if (!status || typeof status !== 'object') return undefined;
+  const s = status as { code?: number; details?: string; message?: string };
+  if (s.code === undefined || s.code === 0) return undefined;
+  return new Error(`gRPC ${s.code}: ${s.details ?? s.message ?? 'stream error'}`);
 }
 
 function stripTrailingSlash(url: string): string {

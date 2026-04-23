@@ -32,6 +32,7 @@ String[] webMods = [
         'web',
         'web-client-api', // compiled javascript api client
         'web-client-ui', // React IDE client app
+        'web-js-core-client', // TypeScript @deephaven/js-core-client npm package
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
         'open-api-lang-parser', // a javacc generated general-purpose language parser.

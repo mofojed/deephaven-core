@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@deephaven/js-core-client basic example</title>
+    <style>
+        body { font-family: monospace; padding: 1em; }
+        pre { background: #f0f0f0; padding: 1em; border-radius: 4px; }
+        .err { color: #b00020; }
+        .ok { color: #0b6e1b; }
+    </style>
+</head>
+<body>
+
+<h3>@deephaven/js-core-client</h3>
+<p>
+    Logs in anonymously, fetches a scope variable named <code>my_table</code>,
+    and prints its size. Create the variable in a console session first, e.g.
+    <code>my_table = empty_table(42)</code> (Python) or
+    <code>my_table = emptyTable(42)</code> (Groovy).
+</p>
+<pre id="out">running...</pre>
+
+<script type="module">
+    // Served from the same server, so a relative import works.
+    import { CoreClient } from './index.js';
+
+    const out = document.getElementById('out');
+    const log = (msg, cls) => {
+        const line = document.createElement('div');
+        if (cls) line.className = cls;
+        line.textContent = msg;
+        if (out.textContent === 'running...') out.textContent = '';
+        out.appendChild(line);
+    };
+
+    (async () => {
+        const serverUrl = window.location.protocol + '//' + window.location.host + '/';
+        log(`connecting to ${serverUrl}`);
+
+        const client = new CoreClient(serverUrl);
+        await client.login({ type: 'anonymous' });
+        log('logged in anonymously', 'ok');
+
+        const tableName = new URLSearchParams(window.location.search).get('table') ?? 'my_table';
+        const table = await client.getTable(tableName);
+        const size = await table.size();
+        log(`table "${tableName}" size = ${size}`, 'ok');
+    })().catch((err) => {
+        log(`ERROR: ${err?.message ?? err}`, 'err');
+        console.error(err);
+    });
+</script>
+</body>
+</html>

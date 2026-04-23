@@ -8,8 +8,13 @@ configurations {
 }
 
 dependencies {
+    // raw-js-openapi provides the real dh-internal.js; list it first so that
+    // its file wins over the intentionally-blank stub that web-client-api's
+    // GWT output still emits (see DuplicatesStrategy.EXCLUDE below).
+    js project(path: ':proto:raw-js-openapi', configuration: 'js')
     js project(path: ':web-client-ui', configuration: 'js')
     js project(path: ':web-client-api', configuration: 'js')
+    js project(path: ':web-js-core-client', configuration: 'js')
 
     api project(':server')
     compileOnly libs.autoservice
@@ -20,6 +25,10 @@ dependencies {
  * Attach the static js/html/css to the main jar so that can be served from jetty
  */
 tasks.named(JavaPlugin.JAR_TASK_NAME, Jar, { jar ->
+    // The real dh-internal.js (from raw-js-openapi) and the blank stub left
+    // in web-client-api's GWT output both land at jsapi/dh-internal.js.
+    // raw-js-openapi is listed first above so EXCLUDE keeps the real file.
+    jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     jar.from(configurations.js) {
         into 'META-INF/resources'
     }

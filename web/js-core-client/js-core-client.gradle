@@ -1,0 +1,46 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn Docker.registryProject('node')
+
+configurations {
+    js
+}
+
+def jsOutputLocation = layout.buildDirectory.dir("dhapi")
+
+def buildJs = Docker.registerDockerTask(project, 'buildJs') {
+    copyIn {
+        from('package.json')
+        from('tsconfig.json')
+        from('tsconfig.build.json')
+        from('vitest.config.ts')
+        from('Dockerfile')
+        from('src') {
+            into 'src'
+        }
+        from('examples') {
+            into 'examples'
+        }
+    }
+    parentContainers = [ Docker.registryTask(project, 'node') ]
+    imageName = Docker.localImageName('js-core-client')
+    containerOutPath = '/out'
+    copyOut {
+        into(jsOutputLocation.get().dir('jsapi'))
+    }
+}
+
+artifacts {
+    js(jsOutputLocation) {
+        builtBy buildJs
+    }
+}
+
+// `buildJs` runs `vitest run` inside its Docker image before emitting artifacts,
+// so piggyback on it for the `check` lifecycle (the plugin auto-registers `check`).
+tasks.named('check').configure {
+    dependsOn buildJs
+}

@@ -1,3 +1,4 @@
+import { createMultiplexedWebsocketTransport } from './MultiplexedWebsocketTransport.js';
 import type {
   AuthenticationConstantsResponse,
   ConfigServiceClient,
@@ -159,11 +160,15 @@ export class DhInternalTransport implements OpenApiTransport {
     // it at build time.
     const mod = (await import(/* @vite-ignore */ url)) as DhInternalModule;
     this.dh = mod.dhinternal;
-    // Use the WebSocket transport, matching what dh-core.js does. The default
-    // Jetty config sets `http.requireHttp2=true`, so HTTP/1.1 grpc calls get
-    // rejected server-side with code 13. WebSockets side-step that entirely.
+    // Use our `grpc-websockets-multiplex` transport, matching what `dh-core.js`
+    // does. The default Jetty config sets `http.requireHttp2=true`, so plain
+    // HTTP/1.1 grpc is rejected with code 13. The stock improbable-eng
+    // `WebsocketTransport` (single-stream `grpc-websockets`) completes unary
+    // calls but doesn't drive Flight.DoExchange responses back through the
+    // server's non-multiplex handler — multiplex is the protocol the legacy
+    // client uses, and the one that actually delivers subscription data.
     const rpcOptions = {
-      transport: this.dh.grpcWeb.grpc.WebsocketTransport(),
+      transport: createMultiplexedWebsocketTransport(this.serviceHost) as never,
     };
     this.configClient = new this.dh.io.deephaven_core.proto.config_pb_service.ConfigServiceClient(this.serviceHost, rpcOptions);
     this.tableClient = new this.dh.io.deephaven_core.proto.table_pb_service.TableServiceClient(this.serviceHost, rpcOptions);

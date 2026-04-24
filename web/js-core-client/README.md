@@ -25,18 +25,16 @@ Scaffold + first two slices. Supports:
 Filtering, sorting, figures, hierarchical tables, console sessions, and most
 of what `@deephaven/jsapi-types` describes are **not yet implemented**.
 
-### Known limitation (follow-up work)
+### Status of ticking
 
-The `Flight.DoExchange` round trip against Deephaven's default non-multiplex
-`grpc-websockets` endpoint does not yet yield snapshot data end-to-end. The
-request is sent and accepted by the server (status=0), but no `FlightData`
-response frames are returned to the client. Unit tests against a synthetic
-mock transport pass, so the Barrage pipeline (flatbuffer encode/decode,
-RangeSet, column store, viewport slicing) is exercised and correct. The issue
-is localized to the WebSocket / bidi-stream handshake with Deephaven's server
-handler; the legacy `dh-core.js` side-steps this by using the
-`grpc-websockets-multiplex` subprotocol (not supported by the upstream
-`@improbable-eng/grpc-web` we rely on).
+Head-of-table viewports (e.g. `{ firstRow: 0, lastRow: 9 }`) work end-to-end
+on both static tables and ticking tables (`time_table`, update-view, etc.).
+The ticket accumulates rows across delta updates as the table grows.
+
+Tail-of-table viewports (negative bounds) and any update that involves
+`rowsRemoved` / `shiftData` / `modColumnNodes` are **phase-(b) work**: the
+current column store ignores those fields, so tail viewports render 0 rows
+even though the subscription is alive and `size` updates correctly.
 
 ## Example
 

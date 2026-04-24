@@ -1,8 +1,8 @@
 import { Builder } from 'flatbuffers';
-import type { Table as ArrowTable } from 'apache-arrow';
+import type { Table as ArrowTable, Field } from 'apache-arrow';
 import type { DoExchangeStream, OpenApiTransport } from '../transport/OpenApiTransport.js';
 import type { Column, Row, ViewportOptions, ViewportUpdate } from '../viewport/ViewportUpdate.js';
-import { BarrageMessageReader, type ParsedBarrageMessage } from './BarrageMessageReader.js';
+import { BarrageMessageReader, type ParsedBarrageMessage, type ParsedMetadata } from './BarrageMessageReader.js';
 import { BarrageMessageWrapper } from './flatbuf/BarrageMessageWrapper.js';
 import { BarrageSubscriptionOptions } from './flatbuf/BarrageSubscriptionOptions.js';
 import { BarrageSubscriptionRequest } from './flatbuf/BarrageSubscriptionRequest.js';
@@ -35,8 +35,9 @@ export class BarrageSubscription {
   private viewport: ViewportOptions | null = null;
   private columnFilter: ReadonlySet<string> | null = null;
 
-  private latestTable: ArrowTable | null = null;
-  private latestMetadata: ParsedBarrageMessage['metadata'] | null = null;
+  private schemaFields: Field[] | null = null;
+  private rowsByKey = new Map<number, unknown[]>();
+  private latestMetadata: ParsedMetadata | null = null;
   private tableSize = 0;
 
   readonly updateListeners = new Set<(u: ViewportUpdate) => void>();
@@ -64,7 +65,7 @@ export class BarrageSubscription {
 
   /** Re-emit the latest ViewportUpdate to a just-attached listener. */
   replayTo(listener: (u: ViewportUpdate) => void): void {
-    if (!this.latestTable) return;
+    if (!this.schemaFields) return;
     const update = this.buildUpdate();
     if (update) listener(update);
   }
@@ -102,11 +103,29 @@ export class BarrageSubscription {
   }
 
   private onMessage(parsed: ParsedBarrageMessage): void {
-    this.latestMetadata = parsed.metadata;
-    this.latestTable = parsed.batches;
     const newSize = parsed.metadata.tableSize;
     const sizeChanged = newSize !== this.tableSize;
     this.tableSize = newSize;
+    this.latestMetadata = parsed.metadata;
+    this.schemaFields = parsed.batches.schema.fields as unknown as Field[];
+
+    // Walk the delivered rows by their server-assigned keys (from
+    // rowsIncluded) and record each row's values per-column. On a snapshot
+    // we clear and replace; on a delta we merge in. This handles append-only
+    // ticking tables correctly (new rows show up as they cross into the
+    // viewport) without yet supporting rowsRemoved/shift/modify — phase (b).
+    if (parsed.metadata.isSnapshot) {
+      this.rowsByKey.clear();
+    }
+    const rowIds = parsed.metadata.rowsIncluded.toArray();
+    const ncols = parsed.batches.schema.fields.length;
+    for (let r = 0; r < rowIds.length; r++) {
+      const values: unknown[] = new Array(ncols);
+      for (let c = 0; c < ncols; c++) {
+        values[c] = parsed.batches.getChildAt(c)?.get(r);
+      }
+      this.rowsByKey.set(rowIds[r]!, values);
+    }
 
     if (sizeChanged) {
       for (const l of this.sizeListeners) l(newSize);
@@ -118,31 +137,24 @@ export class BarrageSubscription {
   }
 
   private buildUpdate(): ViewportUpdate | null {
-    if (!this.latestTable || !this.latestMetadata || !this.viewport) return null;
-    const table = this.latestTable;
-    const schema = table.schema;
+    if (!this.schemaFields || !this.viewport) return null;
 
-    const allColumns: Column[] = schema.fields.map((f) => ({ name: f.name, type: f.type.toString() }));
+    const allColumns: Column[] = this.schemaFields.map((f) => ({
+      name: f.name,
+      type: f.type.toString(),
+    }));
     const filteredIdxs = this.columnFilter
       ? allColumns.map((c, i) => (this.columnFilter!.has(c.name) ? i : -1)).filter((i) => i >= 0)
       : allColumns.map((_, i) => i);
     const columns = filteredIdxs.map((i) => allColumns[i]!);
 
-    // Resolve negative bounds against the current size.
     const { resolvedFirst, resolvedLast, reversed } = resolveBounds(this.viewport, this.tableSize);
-
-    // Materialize rows from the Arrow table. `rowsIncluded` tells us which
-    // absolute row keys map to `table.get(i)` — for a head-of-table snapshot
-    // that's the contiguous range `[rowsIncluded.first, rowsIncluded.last]`.
-    const rowIds = this.latestMetadata.rowsIncluded.toArray();
-    const rowIdToBatchIdx = new Map<number, number>();
-    for (let i = 0; i < rowIds.length; i++) rowIdToBatchIdx.set(rowIds[i]!, i);
 
     const rows: Row[] = [];
     for (let r = resolvedFirst; r <= resolvedLast; r++) {
-      const batchIdx = rowIdToBatchIdx.get(r);
-      if (batchIdx === undefined) continue; // server didn't deliver this row
-      rows.push(makeRow(table, batchIdx, filteredIdxs, allColumns));
+      const values = this.rowsByKey.get(r);
+      if (!values) continue; // server hasn't delivered this row yet
+      rows.push(makeRowFromValues(values, filteredIdxs, allColumns));
     }
 
     return {
@@ -170,9 +182,8 @@ function resolveBounds(
   };
 }
 
-function makeRow(
-  table: ArrowTable,
-  batchIdx: number,
+function makeRowFromValues(
+  values: unknown[],
   filteredIdxs: number[],
   allColumns: Column[],
 ): Row {
@@ -181,8 +192,7 @@ function makeRow(
       const name = typeof column === 'string' ? column : column.name;
       const colIdx = allColumns.findIndex((c) => c.name === name);
       if (colIdx === -1 || !filteredIdxs.includes(colIdx)) return undefined;
-      const vec = table.getChildAt(colIdx);
-      return vec?.get(batchIdx);
+      return values[colIdx];
     },
   };
 }
@@ -222,10 +232,6 @@ function buildSubscriptionRequest(ticket: Uint8Array, viewport: ViewportOptions 
   // Ticket vector.
   const ticketOffset = builder.createByteVector(ticket);
 
-  // Columns bitset — empty means "all columns" per the proto doc, but the
-  // Java client always writes something, so we do too (an empty vector).
-  const columnsOffset = builder.createByteVector(new Uint8Array(0));
-
   // Viewport (compressed range set).
   let viewportOffset = 0;
   let reverse = false;
@@ -237,9 +243,12 @@ function buildSubscriptionRequest(ticket: Uint8Array, viewport: ViewportOptions 
     viewportOffset = builder.createByteVector(encoded);
   }
 
+  // Note: omit the `columns` field entirely. Per the server's
+  // `BarrageRequestHelpers.getColumns`, `columnsVector() == null` means "all
+  // columns"; an empty byte vector is treated as "zero columns subscribed"
+  // and causes the server to stay silent.
   BarrageSubscriptionRequest.startBarrageSubscriptionRequest(builder);
   BarrageSubscriptionRequest.addTicket(builder, ticketOffset);
-  BarrageSubscriptionRequest.addColumns(builder, columnsOffset);
   if (viewportOffset) BarrageSubscriptionRequest.addViewport(builder, viewportOffset);
   BarrageSubscriptionRequest.addSubscriptionOptions(builder, optionsOffset);
   BarrageSubscriptionRequest.addReverseViewport(builder, reverse);

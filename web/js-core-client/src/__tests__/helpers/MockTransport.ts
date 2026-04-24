@@ -14,6 +14,14 @@ export interface MockTransportOptions {
    * The controller is also exposed via `MockTransport.exchanges`.
    */
   onDoExchange?: (controller: MockExchangeController) => void;
+  /**
+   * Called once per `filterTable()`. If omitted, the mock synthesizes a
+   * fresh ticket from a running counter and returns size 0.
+   */
+  onFilter?: (
+    sourceTicket: Uint8Array,
+    filters: readonly string[],
+  ) => FetchTableResult | Promise<FetchTableResult>;
 }
 
 export interface MockExchangeController {
@@ -36,21 +44,38 @@ export class MockTransport implements OpenApiTransport {
   readonly tables: Map<string, FetchTableResult>;
   readonly exchanges: MockExchangeController[] = [];
   private readonly onDoExchange?: (c: MockExchangeController) => void;
+  private readonly onFilter?: MockTransportOptions['onFilter'];
+  private nextMockTicketId = 100;
 
   readonly calls: {
     getAuthenticationConstants: number;
     setAuthorization: Array<{ type: string; value: string }>;
     fetchTableByScopeName: string[];
+    filterTable: Array<{ sourceTicket: Uint8Array; filters: readonly string[] }>;
   } = {
     getAuthenticationConstants: 0,
     setAuthorization: [],
     fetchTableByScopeName: [],
+    filterTable: [],
   };
 
   constructor(options: MockTransportOptions = {}) {
     this.authConstants = options.authConstants ?? new Map([['AuthHandlers', 'Anonymous']]);
     this.tables = options.tables ?? new Map();
     this.onDoExchange = options.onDoExchange;
+    this.onFilter = options.onFilter;
+  }
+
+  async filterTable(
+    sourceTicket: Uint8Array,
+    filters: readonly string[],
+  ): Promise<FetchTableResult> {
+    this.calls.filterTable.push({ sourceTicket, filters });
+    if (this.onFilter) return this.onFilter(sourceTicket, filters);
+    return {
+      ticket: new Uint8Array([0x65, this.nextMockTicketId++, 0, 0, 0]),
+      size: 0,
+    };
   }
 
   async getAuthenticationConstants(): Promise<Map<string, string>> {

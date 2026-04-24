@@ -2,111 +2,263 @@ import { BarrageSubscription } from './barrage/BarrageSubscription.js';
 import type { OpenApiTransport } from './transport/OpenApiTransport.js';
 import type { ViewportOptions, ViewportUpdate } from './viewport/ViewportUpdate.js';
 
+/** A recipe for a derived table. For now only `where` is supported. */
+type Op = { readonly type: 'where'; readonly filters: readonly string[] };
+
+interface MaterializedTableArgs {
+  readonly name: string;
+  readonly transport: OpenApiTransport;
+  readonly ticket: Uint8Array;
+  readonly size: number;
+}
+
+interface PendingTableArgs {
+  readonly name: string;
+  readonly transport: OpenApiTransport;
+  readonly source: Table;
+  readonly op: Op;
+}
+
 /**
  * A server-exported table handle.
  *
- * Viewport lifecycle:
- *   - `setViewport(...)` configures which rows/columns this table should stream.
- *   - `onUpdate(fn)` and `onSizeUpdate(fn)` register listeners; both return a
- *     cleanup function. The subscription opens the first time a listener
- *     registers, and closes again (releasing the server-side export) once the
- *     last listener detaches.
- *   - `copy()` returns a sibling `Table` sharing the server ticket but with
- *     its own viewport + listener set. Useful for rendering the same table
- *     in multiple places with different viewports.
+ * Tables may be either **materialized** (their export ticket is known from
+ * construction — the common case for `CoreClient.getTable`) or **pending**
+ * (the result of a derived op like `.where()`; the ticket is not yet known).
+ *
+ * Derived ops are synchronous and cheap: they just build a new pending
+ * Table that remembers its source + the op to apply. The first time
+ * anything actually needs the ticket (`setViewport`, `onUpdate`,
+ * `onSizeUpdate`, `size`), the Table walks up its chain and issues the
+ * required RPCs server-side, caching the resulting ticket and size.
+ *
+ * Lifecycle:
+ *   - `setViewport({...})` / `onUpdate` / `onSizeUpdate` — open a Barrage
+ *     subscription after materialization completes.
+ *   - `onUpdate(h)` / `onSizeUpdate(h)` return a cleanup `() => void`; when
+ *     the last listener of either kind detaches, the subscription closes
+ *     and the server-side export is released.
+ *   - `copy()` — independent sibling Table; materialized copies share the
+ *     server-side ticket, pending copies share the recipe.
  */
 export class Table {
   readonly name: string;
-  readonly ticket: Uint8Array;
   private readonly transport: OpenApiTransport;
-  private readonly initialSize: number;
+
+  // Exactly one of (ticket/initialSize) or (source/op) is set at construction.
+  private _ticket: Uint8Array | null;
+  private _initialSize: number;
+  private readonly source: Table | null;
+  private readonly op: Op | null;
+
+  private materializePromise: Promise<Uint8Array> | null = null;
+
+  private readonly pendingUpdateHandlers = new Set<(u: ViewportUpdate) => void>();
+  private readonly pendingSizeHandlers = new Set<(s: number) => void>();
+  private pendingViewport: ViewportOptions | null = null;
 
   private subscription: BarrageSubscription | null = null;
-  private viewport: ViewportOptions | null = null;
+  private subscriptionPromise: Promise<BarrageSubscription> | null = null;
+
   private closed = false;
 
-  constructor(args: {
-    name: string;
-    ticket: Uint8Array;
-    size: number;
-    transport: OpenApiTransport;
-  }) {
+  constructor(args: MaterializedTableArgs | PendingTableArgs) {
     this.name = args.name;
-    this.ticket = args.ticket;
-    this.initialSize = args.size;
     this.transport = args.transport;
+    if ('ticket' in args) {
+      this._ticket = args.ticket;
+      this._initialSize = args.size;
+      this.source = null;
+      this.op = null;
+    } else {
+      this._ticket = null;
+      this._initialSize = 0;
+      this.source = args.source;
+      this.op = args.op;
+    }
   }
 
   /**
-   * Resolve to the current row count of the table.
-   *
-   * Fast path: returns the size the server reported on FetchTable. If a
-   * subscription is active, honors the most recently received size instead.
+   * Throws until the Table is materialized. Intended for callers that know
+   * a Table was built via `CoreClient.getTable` (always materialized) or
+   * have already awaited `.size()` / triggered a subscription.
    */
-  async size(): Promise<number> {
-    if (this.subscription && (this.subscription as unknown as { tableSize: number }).tableSize > 0) {
-      return (this.subscription as unknown as { tableSize: number }).tableSize;
+  get ticket(): Uint8Array {
+    if (!this._ticket) {
+      throw new Error(
+        `Table "${this.name}" is not materialized yet. Call .size() or subscribe first.`,
+      );
     }
-    return this.initialSize;
+    return this._ticket;
+  }
+
+  /**
+   * Apply string filter expression(s) server-side. Synchronous: returns a
+   * new pending Table immediately; no RPC is issued until someone subscribes
+   * or reads `.size()`. Accepts varargs, a single array, or any mix:
+   *
+   *     t.where('I > 5');
+   *     t.where('I > 5', 'J < 10');
+   *     t.where(['I > 5', 'J < 10']);
+   *     t.where('I > 5').where('J < 10');   // chain; two server RPCs
+   *
+   * Filter expressions are the same strings Deephaven's `.where(...)` accepts
+   * in Python/Groovy — https://deephaven.io/core/docs/reference/table-operations/filter/where/.
+   */
+  where(...conditions: (string | readonly string[])[]): Table {
+    if (this.closed) throw new Error('Table: already closed');
+    const filters: string[] = [];
+    for (const c of conditions) {
+      if (typeof c === 'string') {
+        filters.push(c);
+      } else if (Array.isArray(c)) {
+        for (const s of c) filters.push(s as string);
+      } else {
+        throw new Error('where: each argument must be a string or an array of strings');
+      }
+    }
+    for (const f of filters) {
+      if (typeof f !== 'string' || f.length === 0) {
+        throw new Error('where: filter entries must be non-empty strings');
+      }
+    }
+    if (filters.length === 0) throw new Error('where: at least one filter string is required');
+
+    const rendered = filters.map((f) => JSON.stringify(f)).join(', ');
+    return new Table({
+      name: `${this.name}.where([${rendered}])`,
+      transport: this.transport,
+      source: this,
+      op: { type: 'where', filters },
+    });
+  }
+
+  /** Resolve the current row count. Triggers materialization on first call. */
+  async size(): Promise<number> {
+    await this.materialize();
+    return this._initialSize;
   }
 
   setViewport(options: ViewportOptions): void {
     if (this.closed) throw new Error('Table: already closed');
-    this.viewport = options;
+    this.pendingViewport = options;
     if (this.subscription) {
       this.subscription.setViewport(options);
+    } else {
+      this.ensureSubscription();
     }
   }
 
   onUpdate(handler: (update: ViewportUpdate) => void): () => void {
     if (this.closed) throw new Error('Table: already closed');
-    const sub = this.ensureSubscription();
-    sub.updateListeners.add(handler);
-    sub.replayTo(handler);
+    this.pendingUpdateHandlers.add(handler);
+    if (this.subscription) {
+      this.subscription.updateListeners.add(handler);
+      this.subscription.replayTo(handler);
+    } else {
+      this.ensureSubscription();
+    }
     return () => {
-      sub.updateListeners.delete(handler);
-      this.maybeCloseSubscription();
+      this.pendingUpdateHandlers.delete(handler);
+      if (this.subscription) {
+        this.subscription.updateListeners.delete(handler);
+        this.maybeCloseSubscription();
+      }
     };
   }
 
   onSizeUpdate(handler: (size: number) => void): () => void {
     if (this.closed) throw new Error('Table: already closed');
-    const sub = this.ensureSubscription();
-    sub.sizeListeners.add(handler);
-    sub.replaySizeTo(handler);
+    this.pendingSizeHandlers.add(handler);
+    if (this.subscription) {
+      this.subscription.sizeListeners.add(handler);
+      this.subscription.replaySizeTo(handler);
+    } else {
+      this.ensureSubscription();
+    }
     return () => {
-      sub.sizeListeners.delete(handler);
-      this.maybeCloseSubscription();
+      this.pendingSizeHandlers.delete(handler);
+      if (this.subscription) {
+        this.subscription.sizeListeners.delete(handler);
+        this.maybeCloseSubscription();
+      }
     };
   }
 
-  /**
-   * New sibling `Table` sharing this table's ticket but with an independent
-   * subscription/listener set. Call `close()` on it when done.
-   */
+  /** Independent sibling Table — same ticket/recipe, own subscription state. */
   copy(): Table {
+    if (this._ticket !== null) {
+      return new Table({
+        name: this.name,
+        transport: this.transport,
+        ticket: this._ticket,
+        size: this._initialSize,
+      });
+    }
     return new Table({
       name: this.name,
-      ticket: this.ticket,
-      size: this.initialSize,
       transport: this.transport,
+      source: this.source!,
+      op: this.op!,
     });
   }
 
-  /** Explicitly close the table. Idempotent. */
+  /** Idempotent. Closes any open subscription and drops pending listeners. */
   close(): void {
     if (this.closed) return;
     this.closed = true;
     this.subscription?.close();
     this.subscription = null;
+    this.subscriptionPromise = null;
+    this.pendingUpdateHandlers.clear();
+    this.pendingSizeHandlers.clear();
   }
 
-  private ensureSubscription(): BarrageSubscription {
-    if (!this.subscription) {
-      this.subscription = new BarrageSubscription(this.transport, this.ticket);
-      if (this.viewport) this.subscription.setViewport(this.viewport);
+  private async materialize(): Promise<Uint8Array> {
+    if (this._ticket) return this._ticket;
+    if (!this.materializePromise) {
+      this.materializePromise = (async () => {
+        const sourceTicket = await this.source!.materialize();
+        const { ticket, size } = await this.transport.filterTable(sourceTicket, this.op!.filters);
+        this._ticket = ticket;
+        this._initialSize = size;
+        return ticket;
+      })();
     }
-    return this.subscription;
+    return this.materializePromise;
+  }
+
+  private ensureSubscription(): void {
+    if (this.closed) return;
+    if (this.subscription || this.subscriptionPromise) return;
+
+    // Fast path: materialized Tables can open their subscription synchronously
+    // so that `setViewport` / `onUpdate` callers can see replayed updates in
+    // the same tick. Pending Tables have to wait for the filter RPC chain.
+    if (this._ticket !== null) {
+      const sub = new BarrageSubscription(this.transport, this._ticket);
+      for (const h of this.pendingUpdateHandlers) sub.updateListeners.add(h);
+      for (const h of this.pendingSizeHandlers) sub.sizeListeners.add(h);
+      this.subscription = sub;
+      if (this.pendingViewport) sub.setViewport(this.pendingViewport);
+      return;
+    }
+
+    this.subscriptionPromise = this.materialize()
+      .then((ticket) => {
+        if (this.closed) throw new Error('Table: closed during materialization');
+        const sub = new BarrageSubscription(this.transport, ticket);
+        for (const h of this.pendingUpdateHandlers) sub.updateListeners.add(h);
+        for (const h of this.pendingSizeHandlers) sub.sizeListeners.add(h);
+        this.subscription = sub;
+        if (this.pendingViewport) sub.setViewport(this.pendingViewport);
+        return sub;
+      })
+      .catch((err: unknown) => {
+        // eslint-disable-next-line no-console
+        console.error(`Table "${this.name}" materialization failed:`, err);
+        throw err;
+      });
   }
 
   private maybeCloseSubscription(): void {
@@ -115,6 +267,7 @@ export class Table {
     if (sub.updateListeners.size === 0 && sub.sizeListeners.size === 0) {
       sub.close();
       this.subscription = null;
+      this.subscriptionPromise = null;
     }
   }
 }

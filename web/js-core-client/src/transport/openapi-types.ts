@@ -50,6 +50,16 @@ export interface FetchTableRequestCtor {
   new (): FetchTableRequest;
 }
 
+export interface UnstructuredFilterTableRequest {
+  setSourceId(value: TableReference): void;
+  setResultId(value: Ticket): void;
+  addFilters(value: string): void;
+}
+
+export interface UnstructuredFilterTableRequestCtor {
+  new (): UnstructuredFilterTableRequest;
+}
+
 export interface ExportedTableCreationResponse {
   getSuccess(): boolean;
   getErrorInfo(): string;
@@ -97,6 +107,11 @@ export interface ConfigServiceClientCtor {
 export interface TableServiceClient {
   fetchTable(
     request: FetchTableRequest,
+    metadata: Record<string, string>,
+    callback: UnaryCallback<ExportedTableCreationResponse>,
+  ): unknown;
+  unstructuredFilter(
+    request: UnstructuredFilterTableRequest,
     metadata: Record<string, string>,
     callback: UnaryCallback<ExportedTableCreationResponse>,
   ): unknown;
@@ -154,6 +169,7 @@ export interface DhInternal {
         table_pb: {
           TableReference: TableReferenceCtor;
           FetchTableRequest: FetchTableRequestCtor;
+          UnstructuredFilterTableRequest: UnstructuredFilterTableRequestCtor;
         };
         config_pb: {
           AuthenticationConstantsRequest: AuthenticationConstantsRequestCtor;

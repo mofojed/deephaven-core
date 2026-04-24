@@ -86,6 +86,36 @@ export class DhInternalTransport implements OpenApiTransport {
     };
   }
 
+  async filterTable(sourceTicket: Uint8Array, filters: readonly string[]): Promise<FetchTableResult> {
+    const dh = await this.ensureLoaded();
+    const proto = dh.io.deephaven_core.proto;
+
+    const source = new proto.ticket_pb.Ticket();
+    source.setTicket(sourceTicket);
+    const sourceRef = new proto.table_pb.TableReference();
+    sourceRef.setTicket(source);
+
+    const resultTicket = new proto.ticket_pb.Ticket();
+    resultTicket.setTicket(this.newExportTicketBytes());
+
+    const req = new proto.table_pb.UnstructuredFilterTableRequest();
+    req.setSourceId(sourceRef);
+    req.setResultId(resultTicket);
+    for (const f of filters) req.addFilters(f);
+
+    const metadata = this.buildMetadata();
+    const response = await unary<ExportedTableCreationResponse>((cb) =>
+      this.tableClient!.unstructuredFilter(req, metadata, cb),
+    );
+    if (!response.getSuccess() && response.getErrorInfo()) {
+      throw new Error(`where failed: ${response.getErrorInfo()}`);
+    }
+    return {
+      ticket: asUint8(resultTicket),
+      size: Number(response.getSize()),
+    };
+  }
+
   openDoExchange(): DoExchangeStream {
     if (!this.dh || !this.flightClient) {
       throw new Error('openDoExchange: call login() first so the transport is loaded');

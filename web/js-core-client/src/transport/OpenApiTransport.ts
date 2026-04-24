@@ -25,6 +25,17 @@ export interface OpenApiTransport {
   fetchTableByScopeName(name: string): Promise<FetchTableResult>;
 
   /**
+   * Apply unstructured (string-expression) filters on the server and return
+   * a new export ticket for the filtered derived table. Equivalent of
+   * Deephaven's `.where([...])` operation.
+   *
+   * @param sourceTicket — the ticket for the table to filter.
+   * @param filters — filter expression strings; the server applies them as
+   *   a conjunction.
+   */
+  filterTable(sourceTicket: Uint8Array, filters: readonly string[]): Promise<FetchTableResult>;
+
+  /**
    * Open a Flight.DoExchange bidirectional stream. Used to carry Barrage
    * subscriptions: the client sends `BarrageSubscriptionRequest` wrapped in a
    * FlightData's `app_metadata`, and the server streams back FlightData frames

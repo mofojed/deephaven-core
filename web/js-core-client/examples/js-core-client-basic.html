@@ -26,6 +26,9 @@
     <li>Static: <code>my_table = empty_table(42).update_view(['I=i', 'J=i*i', 'S="row"+i'])</code></li>
     <li>Ticking: <code>t = time_table("PT1s").update_view(['I=ii'])</code> — open <code>?table=t</code></li>
     <li>Tail viewport: append <code>&amp;tail=10</code> to see the last 10 rows.</li>
+    <li>Server-side filter: append one or more <code>&amp;filter=...</code> params,
+        e.g. <code>?table=my_table&amp;filter=I%3E%3D50</code> or
+        <code>?table=my_table&amp;filter=I%3E10&amp;filter=J%3C1000</code>.</li>
 </ul>
 <div class="meta">
     Table: <span id="name"></span>
@@ -64,8 +67,19 @@
         log('logged in anonymously', 'ok');
 
         nameEl.textContent = tableName;
-        const table = await client.getTable(tableName);
+        let table = await client.getTable(tableName);
         log(`fetched table "${tableName}"`, 'ok');
+
+        // Each `&filter=...` param becomes a separate `.where()` call — this
+        // exercises the lazy-chain path as well as the multi-filter path.
+        const filters = params.getAll('filter').filter((f) => f.length > 0);
+        if (filters.length > 0) {
+            for (const f of filters) {
+                table = table.where(f);
+            }
+            nameEl.textContent = `${tableName} WHERE ${filters.join(' AND ')}`;
+            log(`applied filters: ${filters.join(' AND ')}`, 'ok');
+        }
 
         table.onSizeUpdate((size) => {
             sizeEl.textContent = String(size);

@@ -117,6 +117,42 @@ export class DhInternalTransport implements OpenApiTransport {
     };
   }
 
+  async selectTable(
+    sourceTicket: Uint8Array,
+    columnSpecs: readonly string[],
+    op: 'view' | 'updateView' | 'update',
+  ): Promise<FetchTableResult> {
+    const dh = await this.ensureLoaded();
+    const proto = dh.io.deephaven_core.proto;
+
+    const source = new proto.ticket_pb.Ticket();
+    source.setTicket(sourceTicket);
+    const sourceRef = new proto.table_pb.TableReference();
+    sourceRef.setTicket(source);
+
+    const resultTicket = new proto.ticket_pb.Ticket();
+    resultTicket.setTicket(this.newExportTicketBytes());
+
+    const req = new proto.table_pb.SelectOrUpdateRequest();
+    req.setSourceId(sourceRef);
+    req.setResultId(resultTicket);
+    for (const s of columnSpecs) req.addColumnSpecs(s);
+
+    const metadata = this.buildMetadata();
+    const response = await unary<ExportedTableCreationResponse>((cb) => {
+      if (op === 'view') return this.tableClient!.view(req, metadata, cb);
+      if (op === 'updateView') return this.tableClient!.updateView(req, metadata, cb);
+      return this.tableClient!.update(req, metadata, cb);
+    });
+    if (!response.getSuccess() && response.getErrorInfo()) {
+      throw new Error(`${op} failed: ${response.getErrorInfo()}`);
+    }
+    return {
+      ticket: asUint8(resultTicket),
+      size: Number(response.getSize()),
+    };
+  }
+
   async sortTable(
     sourceTicket: Uint8Array,
     descriptors: readonly SortSpec[],

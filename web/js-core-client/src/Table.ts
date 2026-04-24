@@ -2,10 +2,13 @@ import { BarrageSubscription } from './barrage/BarrageSubscription.js';
 import type { OpenApiTransport, SortSpec } from './transport/OpenApiTransport.js';
 import type { ViewportOptions, ViewportUpdate } from './viewport/ViewportUpdate.js';
 
+type SelectKind = 'view' | 'updateView' | 'update';
+
 /** A recipe for a derived table. */
 type Op =
   | { readonly type: 'where'; readonly filters: readonly string[] }
-  | { readonly type: 'sort'; readonly descriptors: readonly SortSpec[] };
+  | { readonly type: 'sort'; readonly descriptors: readonly SortSpec[] }
+  | { readonly type: SelectKind; readonly columnSpecs: readonly string[] };
 
 interface MaterializedTableArgs {
   readonly name: string;
@@ -189,6 +192,60 @@ export class Table {
     });
   }
 
+  /**
+   * `.view([...])` — pick/derive columns. Formulas can be either plain
+   * column names to select, or assignments like `"Total = Price * Qty"`.
+   * Lazy on the server side (formulas re-evaluated on read).
+   *
+   * Accepts varargs, arrays, or a mix, same as `.where()` / `.sort()`.
+   */
+  view(...specs: (string | readonly string[])[]): Table {
+    return this.buildSelect('view', specs);
+  }
+
+  /**
+   * `.update_view([...])` — add columns without dropping any. Lazy.
+   */
+  updateView(...specs: (string | readonly string[])[]): Table {
+    return this.buildSelect('updateView', specs);
+  }
+
+  /**
+   * `.update([...])` — add columns and materialize them on the server
+   * (eagerly computed, faster reads).
+   */
+  update(...specs: (string | readonly string[])[]): Table {
+    return this.buildSelect('update', specs);
+  }
+
+  private buildSelect(kind: SelectKind, specs: (string | readonly string[])[]): Table {
+    if (this.closed) throw new Error('Table: already closed');
+    const columnSpecs: string[] = [];
+    for (const c of specs) {
+      if (typeof c === 'string') {
+        columnSpecs.push(c);
+      } else if (Array.isArray(c)) {
+        for (const s of c) columnSpecs.push(s as string);
+      } else {
+        throw new Error(`${kind}: each argument must be a string or an array of strings`);
+      }
+    }
+    for (const s of columnSpecs) {
+      if (typeof s !== 'string' || s.length === 0) {
+        throw new Error(`${kind}: column entries must be non-empty strings`);
+      }
+    }
+    if (columnSpecs.length === 0) throw new Error(`${kind}: at least one column spec is required`);
+
+    const rendered = columnSpecs.map((s) => JSON.stringify(s)).join(', ');
+    return new Table({
+      name: `${this.name}.${kind}([${rendered}])`,
+      transport: this.transport,
+      source: this,
+      op: { type: kind, columnSpecs },
+    });
+  }
+
   /** Resolve the current row count. Triggers materialization on first call. */
   async size(): Promise<number> {
     await this.materialize();
@@ -279,8 +336,10 @@ export class Table {
         let result;
         if (op.type === 'where') {
           result = await this.transport.filterTable(sourceTicket, op.filters);
-        } else {
+        } else if (op.type === 'sort') {
           result = await this.transport.sortTable(sourceTicket, op.descriptors);
+        } else {
+          result = await this.transport.selectTable(sourceTicket, op.columnSpecs, op.type);
         }
         this._ticket = result.ticket;
         this._initialSize = result.size;

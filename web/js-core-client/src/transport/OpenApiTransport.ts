@@ -48,6 +48,25 @@ export interface OpenApiTransport {
   ): Promise<FetchTableResult>;
 
   /**
+   * Apply a column-expression operation server-side:
+   *
+   *   - `'view'`        — Deephaven's `.view([...])`: picks/derives columns,
+   *                        lazy (formulas re-evaluated on read).
+   *   - `'updateView'`  — Deephaven's `.update_view([...])`: adds columns,
+   *                        lazy.
+   *   - `'update'`      — Deephaven's `.update([...])`: adds columns,
+   *                        materialized (eagerly computed).
+   *
+   * All three share the `SelectOrUpdateRequest` wire type and only differ in
+   * which `TableService` RPC is invoked.
+   */
+  selectTable(
+    sourceTicket: Uint8Array,
+    columnSpecs: readonly string[],
+    op: 'view' | 'updateView' | 'update',
+  ): Promise<FetchTableResult>;
+
+  /**
    * Open a Flight.DoExchange bidirectional stream. Used to carry Barrage
    * subscriptions: the client sends `BarrageSubscriptionRequest` wrapped in a
    * FlightData's `app_metadata`, and the server streams back FlightData frames

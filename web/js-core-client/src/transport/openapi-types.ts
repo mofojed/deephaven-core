@@ -60,6 +60,16 @@ export interface UnstructuredFilterTableRequestCtor {
   new (): UnstructuredFilterTableRequest;
 }
 
+export interface SelectOrUpdateRequest {
+  setSourceId(value: TableReference): void;
+  setResultId(value: Ticket): void;
+  addColumnSpecs(value: string): void;
+}
+
+export interface SelectOrUpdateRequestCtor {
+  new (): SelectOrUpdateRequest;
+}
+
 export interface SortDescriptor {
   setColumnName(value: string): void;
   setDirection(value: number): void;
@@ -140,6 +150,21 @@ export interface TableServiceClient {
     metadata: Record<string, string>,
     callback: UnaryCallback<ExportedTableCreationResponse>,
   ): unknown;
+  view(
+    request: SelectOrUpdateRequest,
+    metadata: Record<string, string>,
+    callback: UnaryCallback<ExportedTableCreationResponse>,
+  ): unknown;
+  updateView(
+    request: SelectOrUpdateRequest,
+    metadata: Record<string, string>,
+    callback: UnaryCallback<ExportedTableCreationResponse>,
+  ): unknown;
+  update(
+    request: SelectOrUpdateRequest,
+    metadata: Record<string, string>,
+    callback: UnaryCallback<ExportedTableCreationResponse>,
+  ): unknown;
 }
 
 export interface TableServiceClientCtor {
@@ -197,6 +222,7 @@ export interface DhInternal {
           UnstructuredFilterTableRequest: UnstructuredFilterTableRequestCtor;
           SortDescriptor: SortDescriptorCtor;
           SortTableRequest: SortTableRequestCtor;
+          SelectOrUpdateRequest: SelectOrUpdateRequestCtor;
         };
         config_pb: {
           AuthenticationConstantsRequest: AuthenticationConstantsRequestCtor;

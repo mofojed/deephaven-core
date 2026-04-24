@@ -30,6 +30,14 @@ export interface MockTransportOptions {
     sourceTicket: Uint8Array,
     descriptors: readonly SortSpec[],
   ) => FetchTableResult | Promise<FetchTableResult>;
+  /**
+   * Called once per `selectTable()` (for view/updateView/update).
+   */
+  onSelect?: (
+    sourceTicket: Uint8Array,
+    columnSpecs: readonly string[],
+    op: 'view' | 'updateView' | 'update',
+  ) => FetchTableResult | Promise<FetchTableResult>;
 }
 
 export interface MockExchangeController {
@@ -54,6 +62,7 @@ export class MockTransport implements OpenApiTransport {
   private readonly onDoExchange?: (c: MockExchangeController) => void;
   private readonly onFilter?: MockTransportOptions['onFilter'];
   private readonly onSort?: MockTransportOptions['onSort'];
+  private readonly onSelect?: MockTransportOptions['onSelect'];
   private nextMockTicketId = 100;
 
   readonly calls: {
@@ -62,12 +71,18 @@ export class MockTransport implements OpenApiTransport {
     fetchTableByScopeName: string[];
     filterTable: Array<{ sourceTicket: Uint8Array; filters: readonly string[] }>;
     sortTable: Array<{ sourceTicket: Uint8Array; descriptors: readonly SortSpec[] }>;
+    selectTable: Array<{
+      sourceTicket: Uint8Array;
+      columnSpecs: readonly string[];
+      op: 'view' | 'updateView' | 'update';
+    }>;
   } = {
     getAuthenticationConstants: 0,
     setAuthorization: [],
     fetchTableByScopeName: [],
     filterTable: [],
     sortTable: [],
+    selectTable: [],
   };
 
   constructor(options: MockTransportOptions = {}) {
@@ -76,6 +91,7 @@ export class MockTransport implements OpenApiTransport {
     this.onDoExchange = options.onDoExchange;
     this.onFilter = options.onFilter;
     this.onSort = options.onSort;
+    this.onSelect = options.onSelect;
   }
 
   async filterTable(
@@ -96,6 +112,19 @@ export class MockTransport implements OpenApiTransport {
   ): Promise<FetchTableResult> {
     this.calls.sortTable.push({ sourceTicket, descriptors });
     if (this.onSort) return this.onSort(sourceTicket, descriptors);
+    return {
+      ticket: new Uint8Array([0x65, this.nextMockTicketId++, 0, 0, 0]),
+      size: 0,
+    };
+  }
+
+  async selectTable(
+    sourceTicket: Uint8Array,
+    columnSpecs: readonly string[],
+    op: 'view' | 'updateView' | 'update',
+  ): Promise<FetchTableResult> {
+    this.calls.selectTable.push({ sourceTicket, columnSpecs, op });
+    if (this.onSelect) return this.onSelect(sourceTicket, columnSpecs, op);
     return {
       ticket: new Uint8Array([0x65, this.nextMockTicketId++, 0, 0, 0]),
       size: 0,

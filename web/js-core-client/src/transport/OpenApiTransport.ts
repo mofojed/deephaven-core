@@ -36,6 +36,18 @@ export interface OpenApiTransport {
   filterTable(sourceTicket: Uint8Array, filters: readonly string[]): Promise<FetchTableResult>;
 
   /**
+   * Sort a table server-side and return a new export ticket for the sorted
+   * derived table. Equivalent of Deephaven's `.sort([...])` operation.
+   *
+   * @param sourceTicket — the ticket for the table to sort.
+   * @param descriptors — in priority order, the columns to sort by.
+   */
+  sortTable(
+    sourceTicket: Uint8Array,
+    descriptors: readonly SortSpec[],
+  ): Promise<FetchTableResult>;
+
+  /**
    * Open a Flight.DoExchange bidirectional stream. Used to carry Barrage
    * subscriptions: the client sends `BarrageSubscriptionRequest` wrapped in a
    * FlightData's `app_metadata`, and the server streams back FlightData frames
@@ -49,6 +61,14 @@ export interface FetchTableResult {
   ticket: Uint8Array;
   /** The initial row count. Negative values mean "uncoalesced, unknown yet". */
   size: number;
+}
+
+/** One column in a `sortTable` request. */
+export interface SortSpec {
+  /** The column to sort by. */
+  readonly column: string;
+  /** Ascending (default) or descending. */
+  readonly direction: 'asc' | 'desc';
 }
 
 /** Minimal FlightData-shaped record carried on a `DoExchangeStream`. */

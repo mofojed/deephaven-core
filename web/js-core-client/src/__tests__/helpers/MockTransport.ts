@@ -3,6 +3,7 @@ import type {
   DoExchangeStream,
   FetchTableResult,
   OpenApiTransport,
+  SortSpec,
 } from '../../transport/OpenApiTransport.js';
 
 export interface MockTransportOptions {
@@ -21,6 +22,13 @@ export interface MockTransportOptions {
   onFilter?: (
     sourceTicket: Uint8Array,
     filters: readonly string[],
+  ) => FetchTableResult | Promise<FetchTableResult>;
+  /**
+   * Called once per `sortTable()`. Same default as `onFilter` if omitted.
+   */
+  onSort?: (
+    sourceTicket: Uint8Array,
+    descriptors: readonly SortSpec[],
   ) => FetchTableResult | Promise<FetchTableResult>;
 }
 
@@ -45,6 +53,7 @@ export class MockTransport implements OpenApiTransport {
   readonly exchanges: MockExchangeController[] = [];
   private readonly onDoExchange?: (c: MockExchangeController) => void;
   private readonly onFilter?: MockTransportOptions['onFilter'];
+  private readonly onSort?: MockTransportOptions['onSort'];
   private nextMockTicketId = 100;
 
   readonly calls: {
@@ -52,11 +61,13 @@ export class MockTransport implements OpenApiTransport {
     setAuthorization: Array<{ type: string; value: string }>;
     fetchTableByScopeName: string[];
     filterTable: Array<{ sourceTicket: Uint8Array; filters: readonly string[] }>;
+    sortTable: Array<{ sourceTicket: Uint8Array; descriptors: readonly SortSpec[] }>;
   } = {
     getAuthenticationConstants: 0,
     setAuthorization: [],
     fetchTableByScopeName: [],
     filterTable: [],
+    sortTable: [],
   };
 
   constructor(options: MockTransportOptions = {}) {
@@ -64,6 +75,7 @@ export class MockTransport implements OpenApiTransport {
     this.tables = options.tables ?? new Map();
     this.onDoExchange = options.onDoExchange;
     this.onFilter = options.onFilter;
+    this.onSort = options.onSort;
   }
 
   async filterTable(
@@ -72,6 +84,18 @@ export class MockTransport implements OpenApiTransport {
   ): Promise<FetchTableResult> {
     this.calls.filterTable.push({ sourceTicket, filters });
     if (this.onFilter) return this.onFilter(sourceTicket, filters);
+    return {
+      ticket: new Uint8Array([0x65, this.nextMockTicketId++, 0, 0, 0]),
+      size: 0,
+    };
+  }
+
+  async sortTable(
+    sourceTicket: Uint8Array,
+    descriptors: readonly SortSpec[],
+  ): Promise<FetchTableResult> {
+    this.calls.sortTable.push({ sourceTicket, descriptors });
+    if (this.onSort) return this.onSort(sourceTicket, descriptors);
     return {
       ticket: new Uint8Array([0x65, this.nextMockTicketId++, 0, 0, 0]),
       size: 0,

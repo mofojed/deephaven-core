@@ -60,6 +60,26 @@ export interface UnstructuredFilterTableRequestCtor {
   new (): UnstructuredFilterTableRequest;
 }
 
+export interface SortDescriptor {
+  setColumnName(value: string): void;
+  setDirection(value: number): void;
+  setIsAbsolute(value: boolean): void;
+}
+
+export interface SortDescriptorCtor {
+  new (): SortDescriptor;
+}
+
+export interface SortTableRequest {
+  setSourceId(value: TableReference): void;
+  setResultId(value: Ticket): void;
+  addSorts(value: SortDescriptor): void;
+}
+
+export interface SortTableRequestCtor {
+  new (): SortTableRequest;
+}
+
 export interface ExportedTableCreationResponse {
   getSuccess(): boolean;
   getErrorInfo(): string;
@@ -112,6 +132,11 @@ export interface TableServiceClient {
   ): unknown;
   unstructuredFilter(
     request: UnstructuredFilterTableRequest,
+    metadata: Record<string, string>,
+    callback: UnaryCallback<ExportedTableCreationResponse>,
+  ): unknown;
+  sort(
+    request: SortTableRequest,
     metadata: Record<string, string>,
     callback: UnaryCallback<ExportedTableCreationResponse>,
   ): unknown;
@@ -170,6 +195,8 @@ export interface DhInternal {
           TableReference: TableReferenceCtor;
           FetchTableRequest: FetchTableRequestCtor;
           UnstructuredFilterTableRequest: UnstructuredFilterTableRequestCtor;
+          SortDescriptor: SortDescriptorCtor;
+          SortTableRequest: SortTableRequestCtor;
         };
         config_pb: {
           AuthenticationConstantsRequest: AuthenticationConstantsRequestCtor;

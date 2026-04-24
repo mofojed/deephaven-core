@@ -1,9 +1,11 @@
 import { BarrageSubscription } from './barrage/BarrageSubscription.js';
-import type { OpenApiTransport } from './transport/OpenApiTransport.js';
+import type { OpenApiTransport, SortSpec } from './transport/OpenApiTransport.js';
 import type { ViewportOptions, ViewportUpdate } from './viewport/ViewportUpdate.js';
 
-/** A recipe for a derived table. For now only `where` is supported. */
-type Op = { readonly type: 'where'; readonly filters: readonly string[] };
+/** A recipe for a derived table. */
+type Op =
+  | { readonly type: 'where'; readonly filters: readonly string[] }
+  | { readonly type: 'sort'; readonly descriptors: readonly SortSpec[] };
 
 interface MaterializedTableArgs {
   readonly name: string;
@@ -133,6 +135,60 @@ export class Table {
     });
   }
 
+  /**
+   * Sort the table server-side. Synchronous: returns a pending Table, no
+   * RPC issued until someone subscribes or reads `.size()`.
+   *
+   *     t.sort('Price')             // ascending
+   *     t.sort('-Price')            // descending
+   *     t.sort('Ticker', '-Price')  // multi-column, mixed direction
+   *     t.sort(['Ticker', '-Price'])
+   *     t.sort('Ticker').sort('-Price')   // chain, two server RPCs
+   *
+   * Each entry is a column name; a leading `-` flags descending. Whitespace
+   * is trimmed.
+   */
+  sort(...columns: (string | readonly string[])[]): Table {
+    if (this.closed) throw new Error('Table: already closed');
+    const raw: string[] = [];
+    for (const c of columns) {
+      if (typeof c === 'string') {
+        raw.push(c);
+      } else if (Array.isArray(c)) {
+        for (const s of c) raw.push(s as string);
+      } else {
+        throw new Error('sort: each argument must be a string or an array of strings');
+      }
+    }
+    if (raw.length === 0) throw new Error('sort: at least one column is required');
+
+    const descriptors: SortSpec[] = raw.map((entry) => {
+      if (typeof entry !== 'string') {
+        throw new Error('sort: column entries must be strings');
+      }
+      const trimmed = entry.trim();
+      if (trimmed.length === 0) throw new Error('sort: column name must not be empty');
+      if (trimmed === '-') throw new Error('sort: column name must not be empty');
+      if (trimmed.startsWith('-')) {
+        const column = trimmed.slice(1).trim();
+        if (column.length === 0) throw new Error('sort: column name must not be empty');
+        return { column, direction: 'desc' as const };
+      }
+      return { column: trimmed, direction: 'asc' as const };
+    });
+
+    const rendered = descriptors
+      .map((d) => (d.direction === 'desc' ? `-${d.column}` : d.column))
+      .map((s) => JSON.stringify(s))
+      .join(', ');
+    return new Table({
+      name: `${this.name}.sort([${rendered}])`,
+      transport: this.transport,
+      source: this,
+      op: { type: 'sort', descriptors },
+    });
+  }
+
   /** Resolve the current row count. Triggers materialization on first call. */
   async size(): Promise<number> {
     await this.materialize();
@@ -219,10 +275,16 @@ export class Table {
     if (!this.materializePromise) {
       this.materializePromise = (async () => {
         const sourceTicket = await this.source!.materialize();
-        const { ticket, size } = await this.transport.filterTable(sourceTicket, this.op!.filters);
-        this._ticket = ticket;
-        this._initialSize = size;
-        return ticket;
+        const op = this.op!;
+        let result;
+        if (op.type === 'where') {
+          result = await this.transport.filterTable(sourceTicket, op.filters);
+        } else {
+          result = await this.transport.sortTable(sourceTicket, op.descriptors);
+        }
+        this._ticket = result.ticket;
+        this._initialSize = result.size;
+        return result.ticket;
       })();
     }
     return this.materializePromise;

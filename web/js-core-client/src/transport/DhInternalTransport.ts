@@ -15,6 +15,7 @@ import type {
   DoExchangeStream,
   FetchTableResult,
   OpenApiTransport,
+  SortSpec,
 } from './OpenApiTransport.js';
 
 const SCOPE_PREFIX = 's'.charCodeAt(0);
@@ -109,6 +110,45 @@ export class DhInternalTransport implements OpenApiTransport {
     );
     if (!response.getSuccess() && response.getErrorInfo()) {
       throw new Error(`where failed: ${response.getErrorInfo()}`);
+    }
+    return {
+      ticket: asUint8(resultTicket),
+      size: Number(response.getSize()),
+    };
+  }
+
+  async sortTable(
+    sourceTicket: Uint8Array,
+    descriptors: readonly SortSpec[],
+  ): Promise<FetchTableResult> {
+    const dh = await this.ensureLoaded();
+    const proto = dh.io.deephaven_core.proto;
+
+    const source = new proto.ticket_pb.Ticket();
+    source.setTicket(sourceTicket);
+    const sourceRef = new proto.table_pb.TableReference();
+    sourceRef.setTicket(source);
+
+    const resultTicket = new proto.ticket_pb.Ticket();
+    resultTicket.setTicket(this.newExportTicketBytes());
+
+    const req = new proto.table_pb.SortTableRequest();
+    req.setSourceId(sourceRef);
+    req.setResultId(resultTicket);
+    for (const spec of descriptors) {
+      const d = new proto.table_pb.SortDescriptor();
+      d.setColumnName(spec.column);
+      // SortDirection: ASCENDING = 1, DESCENDING = -1 (see deephaven_core/proto/table.proto).
+      d.setDirection(spec.direction === 'desc' ? -1 : 1);
+      req.addSorts(d);
+    }
+
+    const metadata = this.buildMetadata();
+    const response = await unary<ExportedTableCreationResponse>((cb) =>
+      this.tableClient!.sort(req, metadata, cb),
+    );
+    if (!response.getSuccess() && response.getErrorInfo()) {
+      throw new Error(`sort failed: ${response.getErrorInfo()}`);
     }
     return {
       ticket: asUint8(resultTicket),

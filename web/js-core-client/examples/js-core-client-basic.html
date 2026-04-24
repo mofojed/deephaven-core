@@ -29,6 +29,10 @@
     <li>Server-side filter: append one or more <code>&amp;filter=...</code> params,
         e.g. <code>?table=my_table&amp;filter=I%3E%3D50</code> or
         <code>?table=my_table&amp;filter=I%3E10&amp;filter=J%3C1000</code>.</li>
+    <li>Server-side sort: append one or more <code>&amp;sort=...</code> params,
+        prefix the column with <code>-</code> for descending, e.g.
+        <code>?table=my_table&amp;sort=-I</code> or
+        <code>?table=my_table&amp;filter=I%3E50&amp;sort=-J</code>.</li>
 </ul>
 <div class="meta">
     Table: <span id="name"></span>
@@ -70,15 +74,24 @@
         let table = await client.getTable(tableName);
         log(`fetched table "${tableName}"`, 'ok');
 
-        // Each `&filter=...` param becomes a separate `.where()` call — this
-        // exercises the lazy-chain path as well as the multi-filter path.
+        // Each `&filter=...` and `&sort=...` param becomes a separate
+        // call — exercises the lazy-chain path as well as multi-arg form.
         const filters = params.getAll('filter').filter((f) => f.length > 0);
         if (filters.length > 0) {
-            for (const f of filters) {
-                table = table.where(f);
-            }
-            nameEl.textContent = `${tableName} WHERE ${filters.join(' AND ')}`;
+            for (const f of filters) table = table.where(f);
             log(`applied filters: ${filters.join(' AND ')}`, 'ok');
+        }
+        const sorts = params.getAll('sort').filter((s) => s.length > 0);
+        if (sorts.length > 0) {
+            for (const s of sorts) table = table.sort(s);
+            log(`applied sort: ${sorts.join(', ')}`, 'ok');
+        }
+        if (filters.length || sorts.length) {
+            const tail = [
+                filters.length ? `WHERE ${filters.join(' AND ')}` : '',
+                sorts.length ? `SORT BY ${sorts.join(', ')}` : '',
+            ].filter(Boolean).join(' ');
+            nameEl.textContent = `${tableName} ${tail}`;
         }
 
         table.onSizeUpdate((size) => {

@@ -36,7 +36,14 @@ export class BarrageSubscription {
   private columnFilter: ReadonlySet<string> | null = null;
 
   private schemaFields: Field[] | null = null;
-  private rowsByKey = new Map<number, unknown[]>();
+  /**
+   * Viewport subscriptions store rows **positionally** inside the current
+   * viewport, not by server row key. The server's `rowsAdded` / `rowsRemoved`
+   * on a viewport subscription are positions (post-update for added, pre-update
+   * for removed) — see `web/client-api/.../WebColumnData.applyUpdate` in the
+   * legacy client for the shape we're matching.
+   */
+  private viewportRows: unknown[][] = [];
   private latestMetadata: ParsedMetadata | null = null;
   private tableSize = 0;
 
@@ -109,23 +116,11 @@ export class BarrageSubscription {
     this.latestMetadata = parsed.metadata;
     this.schemaFields = parsed.batches.schema.fields as unknown as Field[];
 
-    // Walk the delivered rows by their server-assigned keys (from
-    // rowsIncluded) and record each row's values per-column. On a snapshot
-    // we clear and replace; on a delta we merge in. This handles append-only
-    // ticking tables correctly (new rows show up as they cross into the
-    // viewport) without yet supporting rowsRemoved/shift/modify — phase (b).
+    // Snapshots clear the viewport; subsequent deltas apply on top.
     if (parsed.metadata.isSnapshot) {
-      this.rowsByKey.clear();
+      this.viewportRows = [];
     }
-    const rowIds = parsed.metadata.rowsIncluded.toArray();
-    const ncols = parsed.batches.schema.fields.length;
-    for (let r = 0; r < rowIds.length; r++) {
-      const values: unknown[] = new Array(ncols);
-      for (let c = 0; c < ncols; c++) {
-        values[c] = parsed.batches.getChildAt(c)?.get(r);
-      }
-      this.rowsByKey.set(rowIds[r]!, values);
-    }
+    this.applyViewportUpdate(parsed);
 
     if (sizeChanged) {
       for (const l of this.sizeListeners) l(newSize);
@@ -134,6 +129,69 @@ export class BarrageSubscription {
     if (update) {
       for (const l of this.updateListeners) l(update);
     }
+  }
+
+  /**
+   * Apply a Barrage viewport-subscription update to `viewportRows` using
+   * position-space semantics:
+   *   - `rowsRemoved` are PRE-UPDATE positions to drop.
+   *   - `rowsAdded` are POST-UPDATE positions to fill from the batch.
+   *   - Everything else retains from the old array, shifting as needed.
+   *
+   * This is a direct port of `WebColumnData.applyUpdate` in
+   * `web/client-api/.../barrage/data/WebColumnData.java`, rotated from
+   * per-column to per-row storage. The server uses these fields
+   * *positionally* (not as absolute row keys) for viewport subscriptions,
+   * which is why reversed tables render correctly: a reverse() tick sends
+   * `rowsAdded=[0]` ("insert at front") and—once the viewport is full—
+   * `rowsRemoved=[last]` ("drop the tail").
+   */
+  private applyViewportUpdate(parsed: ParsedBarrageMessage): void {
+    const added = [...parsed.metadata.rowsAdded.indexIterator()];
+    const removed = [...parsed.metadata.rowsRemoved.indexIterator()];
+    const included = [...parsed.metadata.rowsIncluded.indexIterator()];
+    const batch = parsed.batches;
+    const ncols = batch.schema.fields.length;
+
+    const prev = this.viewportRows;
+    const newLength = prev.length - removed.length + added.length;
+    const next: unknown[][] = new Array(newLength);
+
+    const addedSet = new Set(added);
+    const removedSet = new Set(removed);
+
+    // Map "post-update position where we're adding a row" → "index into the
+    // batch for that row's data". Included rows are keyed by server row keys,
+    // but the batch rows arrive in the same order we iterate `added`.
+    const addedToBatchIdx = new Map<number, number>();
+    for (let i = 0; i < added.length; i++) {
+      // The batch has one row of data per entry in `rowsIncluded`, which may
+      // or may not equal `rowsAdded` in general. For viewport subscriptions,
+      // rowsIncluded tracks addedRows 1:1, so indexing by position is safe.
+      addedToBatchIdx.set(added[i]!, Math.min(i, included.length - 1));
+    }
+
+    let retainOffset = 0;
+    let destOffset = 0;
+    while (destOffset < newLength) {
+      if (removedSet.has(retainOffset)) {
+        retainOffset++;
+        continue;
+      }
+      if (addedSet.has(destOffset)) {
+        const batchIdx = addedToBatchIdx.get(destOffset) ?? 0;
+        const values: unknown[] = new Array(ncols);
+        for (let c = 0; c < ncols; c++) {
+          values[c] = batch.getChildAt(c)?.get(batchIdx);
+        }
+        next[destOffset++] = values;
+        continue;
+      }
+      // Retain: copy a previous row into the new array.
+      next[destOffset++] = prev[retainOffset++] ?? new Array(ncols);
+    }
+
+    this.viewportRows = next;
   }
 
   private buildUpdate(): ViewportUpdate | null {
@@ -150,10 +208,12 @@ export class BarrageSubscription {
 
     const { resolvedFirst, resolvedLast, reversed } = resolveBounds(this.viewport, this.tableSize);
 
+    // The stored rows are positional (0 = top of the visible viewport).
     const rows: Row[] = [];
-    for (let r = resolvedFirst; r <= resolvedLast; r++) {
-      const values = this.rowsByKey.get(r);
-      if (!values) continue; // server hasn't delivered this row yet
+    const sliceEnd = Math.min(this.viewportRows.length, resolvedLast - resolvedFirst + 1);
+    for (let i = 0; i < sliceEnd; i++) {
+      const values = this.viewportRows[i];
+      if (!values) continue;
       rows.push(makeRowFromValues(values, filteredIdxs, allColumns));
     }
 

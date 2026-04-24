@@ -148,15 +148,16 @@ describe('Table.setViewport + onUpdate (snapshot path)', () => {
   });
 
   it('resolves negative bounds as offsets from the end', async () => {
+    // The real server delivers only viewport rows (in position order), so for
+    // a reverse viewport the mock sends just the last two rows. The client
+    // reports the resolved absolute row bounds back to the caller.
     const { client } = await connect({
-      rows: { I: new Int32Array([10, 20, 30, 40, 50]) },
+      rows: { I: new Int32Array([40, 50]) },
       tableSize: 5,
     });
     const table = await client.getTable('t');
     const updates: ViewportUpdate[] = [];
     table.onUpdate((u) => updates.push(u));
-    // Request "last 2 rows". Our mock happens to return the full 5 rows for
-    // any request, so the emitted slice is the actual last 2.
     table.setViewport({ firstRow: -2, lastRow: -1 });
 
     expect(updates[0]!.reversed).toBe(true);

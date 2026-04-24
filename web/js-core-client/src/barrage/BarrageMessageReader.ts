@@ -6,6 +6,7 @@ import { BarrageUpdateMetadata } from './flatbuf/BarrageUpdateMetadata.js';
 import { ByteBuffer } from 'flatbuffers';
 import { IpcStreamBuilder } from './IpcStreamBuilder.js';
 import { RangeSet } from './RangeSet.js';
+import { decodeShiftedRanges, type ShiftedRange } from './ShiftedRange.js';
 
 export interface ParsedMetadata {
   isSnapshot: boolean;
@@ -14,7 +15,7 @@ export interface ParsedMetadata {
   rowsIncluded: RangeSet;
   rowsAdded: RangeSet;
   rowsRemoved: RangeSet;
-  shiftData: Uint8Array | null;
+  shifted: ShiftedRange[];
   effectiveViewport: RangeSet | null;
 }
 
@@ -146,6 +147,7 @@ function parseBarrageUpdateMetadata(appMetadata: Uint8Array): ParsedMetadata | n
   const rowsAdded = rangeOrEmpty(meta.addedRows());
   const addedIncluded = meta.addedRowsIncluded();
   const rowsIncluded = addedIncluded === null ? rowsAdded : rangeOrEmpty(addedIncluded);
+  const shiftBytes = meta.shiftData();
 
   return {
     isSnapshot: meta.isSnapshot(),
@@ -154,7 +156,7 @@ function parseBarrageUpdateMetadata(appMetadata: Uint8Array): ParsedMetadata | n
     rowsIncluded,
     rowsAdded,
     rowsRemoved: rangeOrEmpty(meta.removedRows()),
-    shiftData: meta.shiftData(),
+    shifted: shiftBytes && shiftBytes.length > 0 ? decodeShiftedRanges(shiftBytes) : [],
     effectiveViewport: meta.effectiveViewport() ? decodeCompressedRangeSet(meta.effectiveViewport()!) : null,
   };
 }

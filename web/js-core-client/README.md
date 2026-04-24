@@ -27,14 +27,18 @@ of what `@deephaven/jsapi-types` describes are **not yet implemented**.
 
 ### Status of ticking
 
-Head-of-table viewports (e.g. `{ firstRow: 0, lastRow: 9 }`) work end-to-end
-on both static tables and ticking tables (`time_table`, update-view, etc.).
-The ticket accumulates rows across delta updates as the table grows.
+End-to-end live viewports work against `./gradlew server-jetty-app:run -Panonymous`:
 
-Tail-of-table viewports (negative bounds) and any update that involves
-`rowsRemoved` / `shiftData` / `modColumnNodes` are **phase-(b) work**: the
-current column store ignores those fields, so tail viewports render 0 rows
-even though the subscription is alive and `size` updates correctly.
+- Static tables (`empty_table(...).update_view([...])`) — immediate render.
+- Append-only ticking tables (`time_table(...).update_view([...])`) — viewport fills
+  as rows arrive.
+- Insertion-at-top with shifts (`time_table(...).reverse()`) — new rows appear at
+  the top of the viewport and older rows shift down; the oldest drops off the
+  bottom once the viewport is full.
+
+Column modifications (`modColumnNodes`) are not yet applied — value updates to
+already-visible rows (e.g. `live_max`, stateful aggregations with in-place
+changes) won't surface until a follow-up.
 
 ## Example
 

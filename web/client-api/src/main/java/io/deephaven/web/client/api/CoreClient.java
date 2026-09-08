@@ -35,6 +35,7 @@ import java.util.function.Consumer;
  * <p>
  * This type manages connection lifecycle and authentication state, and provides helpers to fetch server and
  * authentication-related configuration.
+ * This is a code change, and should require a label on the PR.
  */
 @JsType(namespace = "dh")
 public class CoreClient extends HasEventHandling {

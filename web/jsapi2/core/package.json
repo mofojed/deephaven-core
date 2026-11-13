@@ -1,0 +1,42 @@
+{
+  "name": "@deephaven/jsapi-core",
+  "version": "0.0.0-dev",
+  "description": "Deephaven server protocol bindings (protobuf messages, gRPC service descriptors, Barrage/Arrow flatbuffers). Served by the server as /jsapi/dh-core2.js.",
+  "author": "Deephaven Data Labs LLC",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deephaven/deephaven-core.git",
+    "directory": "web/jsapi2/core"
+  },
+  "main": "./dist/dh-core2.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/dh-core2.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "build": "npm run generate && tsc -p tsconfig.json && node scripts/bundle.mjs"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.13.0",
+    "flatbuffers": "25.2.10"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "1.75.0",
+    "@bufbuild/protoc-gen-es": "2.13.0",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

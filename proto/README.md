@@ -16,3 +16,7 @@ See [authorization readme](../authorization/README.md)
 
 ## JS API
 
+The GWT JS API (`web/client-api`) compiles the Java protobuf classes, so proto changes are picked up when it is built.
+The TypeScript JS API (`web/jsapi2`) generates its bindings, `/jsapi/dh-core2.js`, from these files when it is built;
+nothing needs to be committed. See [web/jsapi2/README.md](../web/jsapi2/README.md).
+

@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@deephaven/jsapi: table operations</title>
+    <link href="examples.css" rel="stylesheet" type="text/css" />
+    <script type="importmap">{ "imports": { "@deephaven/jsapi": "./deephaven-jsapi.js" } }</script>
+</head>
+<body>
+<h3>Filter, sort, aggregate and join</h3>
+<p>
+    Tables are immutable: filtering or sorting never changes a table, it makes a new one. This page keeps one source
+    table, and each time the filter or sort changes, derives a new table from it, closing the one it replaces. Click a
+    column header to sort by it; click again to reverse, and a third time to stop sorting by it.
+</p>
+<div class="controls">
+    <label for="filter">Filter:</label>
+    <input id="filter" size="40" value="Price > 50" />
+    <button id="apply">Apply</button>
+    <span id="error" class="error"></span>
+</div>
+<div class="panels">
+    <div>
+        <h4>Trades <span id="size"></span></h4>
+        <table id="trades"></table>
+    </div>
+    <div>
+        <h4>Totals by symbol, joined with company names</h4>
+        <table id="totals"></table>
+    </div>
+</div>
+<div id="log"></div>
+<script type="module">
+import { connect, log, renderTable } from './common.js';
+
+const client = await connect();
+
+// The source table and a lookup table; this page owns both for its whole life
+const [trades, companies] = await Promise.all([
+    client.emptyTable(500).update([
+        'Sym = new String[] {`AAPL`, `MSFT`, `GOOG`, `AMZN`}[i % 4]',
+        'Price = round(100 * abs(sin(i))) + 0.5',
+        'Qty = (i * 37) % 100 + 1',
+    ]),
+    client.emptyTable(4).update([
+        'Sym = new String[] {`AAPL`, `MSFT`, `GOOG`, `AMZN`}[i]',
+        'Company = new String[] {`Apple`, `Microsoft`, `Alphabet`, `Amazon`}[i]',
+    ]),
+]);
+
+const sorts = new Map(); // column name -> 'ASC' | 'DESC', in the order they were added
+let current = null; // { table, subscription } derived from trades for the current filter and sort
+
+async function refresh() {
+    const filter = document.getElementById('filter').value.trim();
+    document.getElementById('error').textContent = '';
+
+    // Derive everything from the source, in one batch: the filtered table, its sorted view, and a summary of the
+    // filtered rows joined with the lookup table. The filtered table is never awaited, so the client releases it
+    // once the tables made from it exist.
+    const filtered = filter ? trades.where(filter) : trades;
+    // allSettled rather than all: if one fails, the other may still arrive, and must be closed
+    const results = await Promise.allSettled([
+        sorts.size > 0
+            ? filtered.sort([...sorts].map(([column, direction]) => ({ column, direction })))
+            : filtered.resolve(),
+        filtered
+            .aggBy({
+                aggregations: [
+                    { type: 'Count', column: 'Trades' },
+                    { type: 'Sum', columns: ['TotalQty = Qty'] },
+                    { type: 'WAvg', weightColumn: 'Qty', columns: ['AvgPrice = Price'] },
+                ],
+                groupByColumns: ['Sym'],
+            })
+            .naturalJoin(companies, ['Sym'], ['Company'])
+            .sort('Sym'),
+    ]);
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure) {
+        for (const result of results) {
+            if (result.status === 'fulfilled' && result.value !== trades) {
+                result.value.close();
+            }
+        }
+        document.getElementById('error').textContent = failure.reason.message;
+        return;
+    }
+    const [derived, totals] = results.map(result => result.value);
+
+    try {
+        const totalsData = await totals.createSnapshot();
+        renderTable(document.getElementById('totals'), totalsData);
+    } finally {
+        totals.close();
+    }
+
+    // Swap in the new table, then close the old one and its subscription
+    const previous = current;
+    const subscription = derived.createViewportSubscription({ rows: { first: 0, last: 19 } });
+    subscription.addEventListener('updated', data => {
+        renderTable(document.getElementById('trades'), data, { sorts, onHeaderClick: toggleSort });
+        document.getElementById('size').textContent = `(first ${data.rows.length} of ${data.totalSize})`;
+    });
+    subscription.addEventListener('error', ({ error }) => log(`Subscription failed: ${error.message}`, 'error'));
+    current = { table: derived, subscription };
+    if (previous) {
+        previous.subscription.close();
+        if (previous.table !== trades) {
+            previous.table.close();
+        }
+    }
+    log(`Showing ${derived.size} rows${filter ? ` where ${filter}` : ''}, sorted by ${[...sorts.keys()].join(', ') || 'nothing'}`);
+}
+
+function toggleSort(column) {
+    const direction = sorts.get(column.name);
+    sorts.delete(column.name);
+    if (direction == null) {
+        sorts.set(column.name, 'ASC');
+    } else if (direction === 'ASC') {
+        sorts.set(column.name, 'DESC');
+    }
+    refresh();
+}
+
+document.getElementById('apply').onclick = refresh;
+document.getElementById('filter').addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+        refresh();
+    }
+});
+await refresh();
+
+window.addEventListener('pagehide', () => {
+    current?.subscription.close();
+    client.disconnect();
+});
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ configurations {
 dependencies {
     js project(path: ':web-client-ui', configuration: 'js')
     js project(path: ':web-client-api', configuration: 'js')
+    js project(path: ':web-jsapi2', configuration: 'js')
 
     api project(':server')
     compileOnly libs.autoservice

@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@deephaven/jsapi: create a table and read it</title>
+    <link href="examples.css" rel="stylesheet" type="text/css" />
+    <script type="importmap">{ "imports": { "@deephaven/jsapi": "./deephaven-jsapi.js" } }</script>
+</head>
+<body>
+<h3>Create a table and read a snapshot of it</h3>
+<p>
+    Builds a table on the server with a chain of operations, waits for it once, then reads all of its rows.
+</p>
+<table id="data"></table>
+<div id="log"></div>
+<script type="module">
+import { connect, log, renderTable } from './common.js';
+
+const client = await connect();
+log('Logged in');
+
+// Each operation returns a new pending table: nothing is sent until the end of this task, when the whole chain goes
+// to the server in one batch. Awaiting gives the resolved table, which this code now owns and must close.
+const table = await client
+    .emptyTable(10)
+    .update(['I = i', 'Square = I * I', 'Parity = I % 2 == 0 ? `even` : `odd`', 'When = now() - I * DAY']);
+try {
+    log(`Table has ${table.size} rows and columns ${table.columns.map(c => `${c.name} (${c.type})`).join(', ')}`);
+    const data = await table.createSnapshot();
+    renderTable(document.getElementById('data'), data);
+} finally {
+    table.close();
+    await client.disconnect();
+    log('Closed the table and disconnected');
+}
+</script>
+</body>
+</html>

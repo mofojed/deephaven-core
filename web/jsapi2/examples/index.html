@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@deephaven/jsapi examples</title>
+    <link href="examples.css" rel="stylesheet" type="text/css" />
+    <script type="importmap">{ "imports": { "@deephaven/jsapi": "./deephaven-jsapi.js" } }</script>
+</head>
+<body>
+<h2>@deephaven/jsapi examples</h2>
+<p>
+    These pages use <code>@deephaven/jsapi</code>, the TypeScript client for Deephaven, and its immutable table API.
+    The client loads the server's protocol bindings from <code>/jsapi/dh-core2.js</code>; the original API remains
+    at <code>/jsapi/dh-core.js</code>. In an application, install the package from npm and import it:
+</p>
+<pre>import { CoreClient } from '@deephaven/jsapi';
+
+const client = new CoreClient('http://localhost:10000/');
+await client.login({ type: CoreClient.LOGIN_TYPE_ANONYMOUS });
+const table = await client.getObject({ name: 't' });
+const sorted = await table.sort('X');
+const subscription = sorted.createViewportSubscription({ rows: { first: 0, last: 49 } });
+subscription.addEventListener('updated', data => render(data));</pre>
+<p>
+    Here, an import map points <code>@deephaven/jsapi</code> at a bundled copy the server serves next to these pages.
+    The <code>CoreClient</code> is also on <code>window.dhjs</code> in the browser console. If the server uses a
+    pre-shared key, add <code>?psk=&lt;key&gt;</code> to the URL; otherwise each page asks for it.
+</p>
+<h3>Examples</h3>
+<ul>
+    <li><a href="table_basic.html">Create a table and read a snapshot of it</a></li>
+    <li><a href="table_viewport.html">Subscribe to a viewport of a ticking table, with paging</a></li>
+    <li><a href="table_operations.html">Filter, sort, aggregate and join, deriving new tables from one source</a></li>
+    <li><a href="console.html">Run Python or Groovy code, then fetch and display the tables it creates</a></li>
+</ul>
+<p><a href="../index.html">Examples of the original JS API</a></p>
+<script type="module">
+    import * as dhjs from '@deephaven/jsapi';
+    import { keepPskOnLinks } from './common.js';
+    window.dhjs = dhjs;
+    keepPskOnLinks();
+</script>
+</body>
+</html>

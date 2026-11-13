@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@deephaven/jsapi: viewport subscription</title>
+    <link href="examples.css" rel="stylesheet" type="text/css" />
+    <script type="importmap">{ "imports": { "@deephaven/jsapi": "./deephaven-jsapi.js" } }</script>
+</head>
+<body>
+<h3>Subscribe to a viewport of a ticking table</h3>
+<p>
+    A time table gains a row every 500ms, newest first. The subscription asks the server for one page of rows at a
+    time, and the server sends updates whenever those rows change.
+</p>
+<div class="controls">
+    <button id="prev">Previous page</button>
+    <button id="next">Next page</button>
+    <span id="status"></span>
+</div>
+<table id="data"></table>
+<div id="log"></div>
+<script type="module">
+import { connect, log, renderTable } from './common.js';
+
+const PAGE_SIZE = 15;
+const client = await connect();
+
+// A ticking source table and a sorted view of it; both are resolved tables this page owns
+const ticking = await client
+    .timeTable('PT0.5s')
+    .update(['Row = ii', 'Bucket = Row % 5', 'Value = sin(Row / 10.0)']);
+const newestFirst = await ticking.sort([{ column: 'Row', direction: 'DESC' }]);
+log(`Subscribed to ${newestFirst.columns.length} columns of a ${newestFirst.isRefreshing ? 'refreshing' : 'static'} table`);
+
+let firstRow = 0;
+const subscription = newestFirst.createViewportSubscription({
+    rows: { first: firstRow, last: firstRow + PAGE_SIZE - 1 },
+    updateIntervalMs: 250,
+});
+
+// Every update delivers the viewport's current data
+subscription.addEventListener('updated', data => {
+    renderTable(document.getElementById('data'), data);
+    document.getElementById('status').textContent =
+        `Rows ${data.offset}-${data.offset + data.rows.length - 1} of ${data.totalSize}`;
+});
+subscription.addEventListener('error', ({ error }) => log(`Subscription failed: ${error.message}`, 'error'));
+
+async function showPage(first) {
+    firstRow = Math.max(0, first);
+    subscription.setViewport({ first: firstRow, last: firstRow + PAGE_SIZE - 1 });
+    // Resolves once the server is sending the new viewport
+    const data = await subscription.getViewportData();
+    log(`Now showing rows from ${data.offset}`);
+}
+document.getElementById('prev').onclick = () => showPage(firstRow - PAGE_SIZE);
+document.getElementById('next').onclick = () => showPage(firstRow + PAGE_SIZE);
+
+window.addEventListener('pagehide', () => {
+    subscription.close();
+    newestFirst.close();
+    ticking.close();
+    client.disconnect();
+});
+</script>
+</body>
+</html>

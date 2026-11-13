@@ -1,0 +1,13 @@
+body { font-family: sans-serif; margin: 1rem 2rem; }
+table { border-spacing: 0; margin: 0.5rem 0; }
+thead td { font-weight: bold; border-bottom: 1px solid black; padding: 4px; }
+tbody td { border-bottom: 1px solid #ccc; padding: 4px; font-family: monospace; }
+tbody td:first-child, thead td:first-child { color: grey; }
+thead .asc:after { content: " ↑"; color: blue; }
+thead .desc:after { content: " ↓"; color: blue; }
+.controls { margin: 0.5rem 0; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.error { color: red; }
+#log { color: dimgrey; font-size: 0.85rem; margin-top: 1rem; }
+textarea { font-family: monospace; width: 100%; max-width: 60rem; }
+pre { background: #f4f4f4; padding: 0.5rem; max-width: 60rem; overflow-x: auto; }
+.panels { display: flex; gap: 2rem; flex-wrap: wrap; }

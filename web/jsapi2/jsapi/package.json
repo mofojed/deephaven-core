@@ -1,0 +1,45 @@
+{
+  "name": "@deephaven/jsapi",
+  "version": "0.0.0-dev",
+  "description": "TypeScript client for Deephaven Community Core: connect to a server, and create, transform and subscribe to tables with the immutable table API",
+  "author": "Deephaven Data Labs LLC",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deephaven/deephaven-core.git",
+    "directory": "web/jsapi2/jsapi"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/browser"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/bundle.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run test/unit",
+    "test:integration": "vitest run test/integration"
+  },
+  "dependencies": {
+    "@deephaven/jsapi-core": "0.0.0-dev"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "undici": "^7.30.2",
+    "vitest": "3.2.7"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

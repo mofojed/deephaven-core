@@ -1,0 +1,104 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn Docker.registryProject('node')
+
+// Builds the TypeScript JS API (see README.md):
+//  - @deephaven/jsapi-core, the protocol bindings generated from the server's .proto files, served as /jsapi/dh-core2.js
+//  - @deephaven/jsapi, the client library on npm, which loads dh-core2.js from the server it connects to
+//  - example pages, served under /jsapi/v2/
+
+configurations {
+    protoJars {
+        transitive = false
+    }
+    // static files to serve: jsapi/dh-core2.js and jsapi/v2/**
+    js
+    // npm tarballs of both packages
+    npmModule
+}
+
+dependencies {
+    // Flight.proto and BrowserFlight.proto are not in this repository; take them from the jars the server uses
+    protoJars libs.arrow.flight.core
+    protoJars libs.deephaven.barrage.core
+}
+
+// https://docs.npmjs.com/cli/v11/configuring-npm/package-json#version
+// npm requires the version string be parseable as a semver, so the deephaven version 'X.Y' becomes 'X.Y.0'
+def deephavenMajorVersion = project.property('deephavenMajorVersion').toString().trim()
+def deephavenMinorVersion = project.property('deephavenMinorVersion').toString().trim()
+def npmVersion = "${deephavenMajorVersion}.${deephavenMinorVersion}.0".toString()
+def preId = project.findProperty('npmPreid')// i.e. 'nightly'
+if (preId) {
+    npmVersion += preId + new Date().format("yyyyMMdd")
+}
+
+/**
+ * Gathers every .proto file the bindings are generated from into build/proto, where `npm run build` reads them. Run
+ * this once before building with npm directly.
+ */
+def syncProtos = tasks.register('syncProtos', Sync) {
+    from(project(':proto:proto-backplane-grpc').file('src/main/proto')) {
+        include 'deephaven_core/proto/*.proto'
+    }
+    from({ configurations.protoJars.collect { zipTree(it) } }) {
+        include 'Flight.proto'
+        include 'BrowserFlight.proto'
+    }
+    into layout.buildDirectory.dir('proto')
+}
+
+def jsapi2Build = Docker.registerDockerTask(project, 'jsapi2Build') {
+    copyIn {
+        from(projectDir) {
+            exclude 'build'
+            exclude 'jsapi2.gradle'
+            exclude 'gradle.properties'
+            exclude '**/node_modules'
+            exclude '**/dist'
+            exclude 'core/src/gen'
+        }
+        from(syncProtos) {
+            into 'build/proto'
+        }
+    }
+    dockerfile {
+        from Docker.localImageName('node')
+        copyFile('.', '/project')
+        environmentVariable('VERSION', npmVersion)
+        environmentVariable('CI', 'true')
+        runCommand('''set -eux; \\
+                      cd /project; \\
+                      npm ci; \\
+                      npm run build; \\
+                      npm run typecheck; \\
+                      npm test; \\
+                      node scripts/set-version.mjs "$VERSION"; \\
+                      mkdir -p /out/js/jsapi/v2 /out/npm; \\
+                      cp core/dist/dh-core2.js core/dist/dh-core2.js.map /out/js/jsapi/; \\
+                      cp examples/* jsapi/dist/browser/* /out/js/jsapi/v2/; \\
+                      npm pack -w core -w jsapi --pack-destination /out/npm; \\
+                      ''')
+    }
+    parentContainers = [ Docker.registryTask(project, 'node') ]
+    containerOutPath = '/out'
+    copyOut {
+        into layout.buildDirectory.dir('jsapi2')
+    }
+}
+
+artifacts {
+    js(layout.buildDirectory.dir('jsapi2/js')) {
+        builtBy jsapi2Build
+    }
+    npmModule(layout.buildDirectory.dir('jsapi2/npm')) {
+        builtBy jsapi2Build
+    }
+}
+
+tasks.named('assemble').configure {
+    dependsOn jsapi2Build
+}

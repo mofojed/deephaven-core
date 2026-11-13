@@ -1,0 +1,19 @@
+{
+  "name": "@deephaven/jsapi2-workspace",
+  "private": true,
+  "description": "Workspace for the Deephaven TypeScript JS API: @deephaven/jsapi-core (served as /jsapi/dh-core2.js) and @deephaven/jsapi",
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "core",
+    "jsapi"
+  ],
+  "scripts": {
+    "build": "npm run build -w core && npm run build -w jsapi",
+    "test": "npm run test -w jsapi",
+    "typecheck": "npm run typecheck -w jsapi"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

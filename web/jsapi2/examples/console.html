@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@deephaven/jsapi: console</title>
+    <link href="examples.css" rel="stylesheet" type="text/css" />
+    <script type="importmap">{ "imports": { "@deephaven/jsapi": "./deephaven-jsapi.js" } }</script>
+</head>
+<body>
+<h3>Run code, then fetch and display the tables it creates</h3>
+<p>
+    Runs code in a Python or Groovy session on the server. Click a table it created to fetch it by name with
+    <code>client.getObject</code>, sort it, and subscribe to its first rows.
+</p>
+<textarea id="code" rows="6"></textarea>
+<div class="controls">
+    <button id="run">Run</button>
+    <span id="language"></span>
+    <span id="error" class="error"></span>
+</div>
+<div class="controls">Tables: <span id="tables"></span></div>
+<div class="controls">
+    <label for="sort">Sort by:</label>
+    <select id="sort"></select>
+</div>
+<table id="data"></table>
+<div id="log"></div>
+<script type="module">
+import { connect, log, renderTable } from './common.js';
+
+const SAMPLE_CODE = {
+    python: `from deephaven import time_table
+t = time_table("PT1s").update(["X = ii", "Y = Math.random()", "Group = X % 3"])
+totals = t.count_by("Count", by=["Group"])`,
+    groovy: `t = timeTable("PT1s").update("X = ii", "Y = Math.random()", "Group = X % 3")
+totals = t.countBy("Count", "Group")`,
+};
+
+const client = await connect();
+const types = await client.getConsoleTypes();
+const language = types.includes('python') ? 'python' : types[0];
+const session = await client.startSession(language);
+document.getElementById('language').textContent = `(${language})`;
+document.getElementById('code').value = SAMPLE_CODE[language] ?? '';
+
+let shown = null; // { table, sorted, subscription } for the table on display
+
+async function show(name, sortColumn) {
+    // This is the flow an application uses: fetch the table, derive a sorted table from it, and subscribe
+    const table = await client.getObject({ name });
+    let sorted;
+    try {
+        sorted = await table.sort(sortColumn ?? table.columns[0].name);
+    } catch (e) {
+        table.close();
+        throw e;
+    }
+    const subscription = sorted.createViewportSubscription({ rows: { first: 0, last: 24 } });
+    subscription.addEventListener('updated', data => renderTable(document.getElementById('data'), data));
+    subscription.addEventListener('error', ({ error }) => log(`Subscription failed: ${error.message}`, 'error'));
+
+    if (shown) {
+        shown.subscription.close();
+        shown.sorted.close();
+        shown.table.close();
+    }
+    shown = { name, table, sorted, subscription };
+
+    const select = document.getElementById('sort');
+    select.replaceChildren(...table.columns.map(c => new Option(c.name, c.name, false, c.name === (sortColumn ?? table.columns[0].name))));
+    log(`Showing ${name} (${table.size} rows${table.isRefreshing ? ', ticking' : ''})`);
+}
+
+document.getElementById('sort').onchange = event => {
+    if (shown) {
+        show(shown.name, event.target.value).catch(e => log(e.message));
+    }
+};
+
+document.getElementById('run').onclick = async () => {
+    document.getElementById('error').textContent = '';
+    const result = await session.runCode(document.getElementById('code').value);
+    if (result.error) {
+        document.getElementById('error').textContent = result.error;
+    }
+    const tables = [...result.changes.created, ...result.changes.updated].filter(v => v.type === 'Table');
+    const links = tables.map(variable => {
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = variable.name;
+        link.onclick = event => {
+            event.preventDefault();
+            show(variable.name).catch(e => log(e.message));
+        };
+        return link;
+    });
+    document.getElementById('tables').replaceChildren(...links.flatMap((link, i) => (i > 0 ? [' ', link] : [link])));
+    if (tables.length > 0) {
+        await show(tables[0].name);
+    }
+};
+
+window.addEventListener('pagehide', () => {
+    shown?.subscription.close();
+    session.close();
+    client.disconnect();
+});
+</script>
+</body>
+</html>

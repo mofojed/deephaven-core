@@ -21,11 +21,13 @@ Welcome to the Deephaven JS API. This page has the api loaded, open the browser 
     <li><a href="totals_tables.html">Create totals, grand totals from an existing table</a></li>
     <li><a id="auth" href="authentication">Authentication samples</a></li>
 </ul>
+<p><a id="v2" href="v2/index.html">Examples of @deephaven/jsapi, the TypeScript API, with immutable tables</a></p>
 <script type="module">
     // If a PSK is specified in the URL, ensure that the auth link retains it
     var urlPsk = new URL(window.location).searchParams.get('psk');
     if (urlPsk) {
         document.getElementById('auth').href += "?psk=" + urlPsk;
+        document.getElementById('v2').href += "?psk=" + urlPsk;
     }
 
     // Import the JS API and attach it to the window object for easier experimentation
